@@ -305,15 +305,22 @@ export const stations = [
     receipt: {
       buildTime: "Two evenings (est.)",
       tool: "Claude web, nothing installed",
-      cost: "Free tier (est.)",
-      lines: "~600 (est.)",
+      // This one exists, so these two stopped being guesses. Everything else on
+      // this receipt is still an estimate and still says so.
+      cost: "Free. It calls no services, so there is nothing to pay for.",
+      lines: "2,884 across two files (measured)",
       dataTouched: "Backlog titles you paste in, held only in the page. Demo it with invented ones.",
       skill: "Writing titles somebody can judge in four seconds",
       hardestPart: "Not turning the disagreement back into a single sorted list",
     },
 
-    demo: { type: "placeholder" },
-    links: [],
+    demo: { type: "external" },
+    links: [
+      {
+        label: "Open Backlog Swipe",
+        href: "https://bigeazee.github.io/promptlands/demos/backlog-swipe/",
+      },
+    ],
   },
 
   {

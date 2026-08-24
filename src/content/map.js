@@ -29,7 +29,7 @@
  * and 36 below roof_red, on the opposite side of the wheel, and its detail runs
  * in unbroken horizontal lines rather than a grid, so it holds together as a
  * surface at the far end of a Teams call. The paving follows the frontages and
- * stops at the gaps, which leaves every station and the plaque standing on
+ * stops at the gaps, which leaves every station and the guide standing on
  * green: a brown prop on grey stone is the one place that contrast runs out.
  * grass_gravel survives as three tiles of trodden ground under the market
  * awnings at x 49..51, which is the size it works at.
@@ -54,8 +54,8 @@
  * tests/content.test.js both flood-fill the map from the spawn and fail if that
  * ever happens, so do not take a wall apart to make room for something.
  *
- * Stations, gates and plaques are NOT in this grid. They are drawn from
- * stations.js, gates.js and plaques.js as entities, so adding a station stays a
+ * Stations, gates and guides are NOT in this grid. They are drawn from
+ * stations.js, gates.js and guides.js as entities, so adding a station stays a
  * one-object edit to one file. Their tiles must therefore be walkable ground
  * here - markSolid() and lockGates() in src/engine/zones.js make them
  * solid at boot, and they throw if the map already did.

@@ -38,7 +38,7 @@ Firefox.
 ## Gates and progress
 
 Each zone ends at a gate with one question, and the answer is findable in the
-zone you are standing in: in the stations, and on the plaque at the zone's
+zone you are standing in: in the stations, and from the guide at the zone's
 entrance. A wrong answer says so and lets you try again straight away. There is
 no score, no timer and no way to lose this game.
 
@@ -78,7 +78,7 @@ node --test
 
 No test framework and nothing to install: the tests use Node's built-in
 `node:test`. Node 22 or newer. The one worth knowing about is the content
-validation suite, which checks every station, gate, plaque and map tile before
+validation suite, which checks every station, gate, guide and map tile before
 a change can reach the live site.
 
 ## Contributing

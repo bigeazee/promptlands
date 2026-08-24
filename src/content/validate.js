@@ -19,7 +19,7 @@
  * MESSAGES MATCH THEIR SCOPE - see CLAUDE.md section 9. A fault in the grid
  * names the row, the column and the offending character. A fault in a
  * definition has no row and column, so it names the key it belongs to: the
- * station id, the gate id, the legend character, or the plaque's zone. Every
+ * station id, the gate id, the legend character, or the guide's zone. Every
  * message is a complete sentence that could be read out over a shoulder.
  *
  * It lives in a module rather than in the test file so the test stays thin, and
@@ -31,9 +31,9 @@ import { canEnter } from "../engine/collision.js";
 import { MOVE_MS } from "../engine/player.js";
 import { index, parseMap } from "../engine/tilemap.js";
 import { lockGates, markSolid } from "../engine/zones.js";
-import { spriteExists } from "./sprites.js";
+import { isOverlay, spriteExists } from "./sprites.js";
 import { FLAGSHIP_MARKER_SPRITE } from "./stations.js";
-import { plaqueId } from "./plaques.js";
+import { guideId } from "./guides.js";
 
 /** The seven receipt fields, in CLAUDE.md's order. Never reorder, never trim. */
 export const RECEIPT_FIELDS = [
@@ -50,6 +50,13 @@ export const RECEIPT_FIELDS = [
 export const ZONE_IDS = [1, 2, 3];
 
 /** Stations per zone, and flagships per zone. */
+/**
+ * The most characters one dialogue box holds comfortably at the sizes in
+ * ui.css. Past this a line overflows the box on the day rather than in review,
+ * so the validator refuses it instead.
+ */
+const MAX_DIALOGUE_LINE = 140;
+
 const STATIONS_PER_ZONE = 3;
 const FLAGSHIPS_PER_ZONE = 1;
 
@@ -81,26 +88,26 @@ const NEIGHBOURS = [
  * @param {object} content
  * @param {object[]} content.stations
  * @param {object[]} content.gates
- * @param {object[]} content.plaques
+ * @param {object[]} content.guides
  * @param {object} content.mapDef
  * @param {object} content.legend
  * @returns {string[]} every problem found, each a complete actionable sentence.
  *   An empty array means the content is valid.
  */
-export function validateContent({ stations, gates, plaques, mapDef, legend } = {}) {
+export function validateContent({ stations, gates, guides, mapDef, legend } = {}) {
   const problems = [];
 
   const stationList = asArray(stations, "stations", problems);
   const gateList = asArray(gates, "gates", problems);
-  const plaqueList = asArray(plaques, "plaques", problems);
+  const guideList = asArray(guides, "guides", problems);
 
   for (const station of stationList) checkStation(station, problems);
   for (const gate of gateList) checkGate(gate, problems);
-  for (const plaque of plaqueList) checkPlaque(plaque, problems);
+  for (const guide of guideList) checkGuide(guide, problems);
 
   checkUniqueIds(stationList, "station", problems);
   checkUniqueIds(gateList, "gate", problems);
-  checkZoneCounts(stationList, plaqueList, problems);
+  checkZoneCounts(stationList, guideList, problems);
 
   if (!spriteExists(FLAGSHIP_MARKER_SPRITE)) {
     problems.push(
@@ -124,7 +131,7 @@ export function validateContent({ stations, gates, plaques, mapDef, legend } = {
   const placed = [
     ...stationList.map((s) => ({ kind: "station", id: idOf(s), item: s })),
     ...gateList.map((g) => ({ kind: "gate", id: idOf(g), item: g })),
-    ...plaqueList.map((p) => ({ kind: "plaque", id: plaqueId(p), item: p })),
+    ...guideList.map((g) => ({ kind: "guide", id: guideId(g), item: g })),
   ];
 
   const placementProblems = [];
@@ -135,7 +142,7 @@ export function validateContent({ stations, gates, plaques, mapDef, legend } = {
   // both of those throw on a tile the placement pass has already reported. No
   // point saying it twice in two different voices.
   if (placementProblems.length === 0) {
-    checkTheMapAsWalked(grid, stationList, gateList, plaqueList, problems);
+    checkTheMapAsWalked(grid, stationList, gateList, guideList, problems);
   }
 
   return problems;
@@ -301,33 +308,80 @@ function checkGate(gate, problems) {
   }
 }
 
-function checkPlaque(plaque, problems) {
-  // A plaque has no id: there is exactly one per zone, so the zone IS the
-  // identity, and that is what the message names. See src/content/plaques.js.
-  const say = (text) => problems.push(`The plaque for zone ${plaque && plaque.zone} ${text}`);
+function checkGuide(guide, problems) {
+  // A guide has no id: there is exactly one per zone, so the zone IS the
+  // identity, and that is what the message names. See src/content/guides.js.
+  const say = (text) => problems.push(`The guide for zone ${guide && guide.zone} ${text}`);
 
-  if (!plaque || typeof plaque !== "object") {
-    problems.push("Every entry in plaques must be an object. See src/content/plaques.js.");
+  if (!guide || typeof guide !== "object") {
+    problems.push("Every entry in guides must be an object. See src/content/guides.js.");
     return;
   }
-  checkZone(plaque.zone, (text) => problems.push(`A plaque ${text}`));
+  checkZone(guide.zone, (text) => problems.push(`A guide ${text}`));
 
-  for (const field of ["title", "level", "body", "sprite"]) {
-    if (!isFilledString(plaque[field])) {
+  for (const field of ["name", "sprite"]) {
+    if (!isFilledString(guide[field])) {
       say(`needs a non-empty "${field}".`);
     }
   }
-  checkTileShape(plaque.tile, say);
+  checkTileShape(guide.tile, say);
+  checkDialogue(guide.lines, "lines", say, true);
+  checkDialogue(guide.repeat, "repeat", say, false);
 
-  if (isFilledString(plaque.sprite) && !spriteExists(plaque.sprite)) {
-    say(`uses sprite "${plaque.sprite}", which is not a name in src/content/sprites.js.`);
+  if (isFilledString(guide.sprite)) {
+    if (!spriteExists(guide.sprite)) {
+      say(`uses sprite "${guide.sprite}", which is not a name in src/content/sprites.js.`);
+    } else if (!isOverlay(guide.sprite)) {
+      // An opaque sprite drawn as an entity paints a solid square of tile over
+      // whatever it is standing on. A person has to have a transparent
+      // background or they arrive as a hole in the ground.
+      say(
+        `uses sprite "${guide.sprite}", which is an opaque terrain tile rather than a ` +
+          `character. Pick one with a transparent background — the npc_ sprites in ` +
+          `src/content/sprites.js are the people.`
+      );
+    }
   }
-  if (plaque.receipt !== undefined) {
+  if (guide.receipt !== undefined) {
     say(
-      "has a receipt. A plaque is not a station: it has no build time, no cost and no line " +
-        "count, and seven invented figures cost more trust than the plaque is worth."
+      "has a receipt. A guide is not a station: they have no build time, no cost and no line " +
+        "count, and seven invented figures cost more trust than the conversation is worth."
     );
   }
+}
+
+/**
+ * `lines` is what a first-time visitor hears and must exist. `repeat` is the
+ * shorter thing said afterwards and is optional, but if it is there it has to
+ * be the same shape.
+ */
+function checkDialogue(value, field, say, required) {
+  if (value === undefined || value === null) {
+    if (required) {
+      say(`needs "${field}": an array of what they say, one entry per dialogue box.`);
+    }
+    return;
+  }
+  if (!Array.isArray(value)) {
+    say(`has "${field}" that is not an array. One entry per dialogue box.`);
+    return;
+  }
+  if (required && value.length === 0) {
+    say(`has an empty "${field}". A guide with nothing to say is a guide nobody needs.`);
+    return;
+  }
+  value.forEach((line, i) => {
+    if (!isFilledString(line)) {
+      say(`has an empty entry at ${field}[${i}]. Every dialogue box needs something in it.`);
+      return;
+    }
+    if (line.length > MAX_DIALOGUE_LINE) {
+      say(
+        `has ${field}[${i}] at ${line.length} characters, over the ${MAX_DIALOGUE_LINE} a ` +
+          `dialogue box holds. Split it into two entries — one box, one thought.`
+      );
+    }
+  });
 }
 
 function checkZone(zone, say, field = "zone") {
@@ -357,7 +411,7 @@ function checkUniqueIds(list, kind, problems) {
   }
 }
 
-function checkZoneCounts(stationList, plaqueList, problems) {
+function checkZoneCounts(stationList, guideList, problems) {
   for (const zone of ZONE_IDS) {
     const inZone = stationList.filter((station) => station && station.zone === zone);
     if (inZone.length !== STATIONS_PER_ZONE) {
@@ -375,11 +429,11 @@ function checkZoneCounts(stationList, plaqueList, problems) {
           `through live.`
       );
     }
-    const inZonePlaques = plaqueList.filter((plaque) => plaque && plaque.zone === zone);
-    if (inZonePlaques.length !== 1) {
+    const inZoneGuides = guideList.filter((guide) => guide && guide.zone === zone);
+    if (inZoneGuides.length !== 1) {
       problems.push(
-        `Zone ${zone} has ${inZonePlaques.length} plaques. Every zone has exactly one, at its ` +
-          `entrance — it is what makes that zone's gate answer findable without a narrator.`
+        `Zone ${zone} has ${inZoneGuides.length} guides. Every zone has exactly one, near its ` +
+          `entrance — they are what makes that zone's gate answer findable without a narrator.`
       );
     }
   }
@@ -423,7 +477,7 @@ function checkPlacement(grid, placed, problems) {
       byTile.set(key, { kind, id });
     }
 
-    if (kind === "station" || kind === "plaque") {
+    if (kind === "station" || kind === "guide") {
       const open = NEIGHBOURS.some(([dx, dy]) => canEnter(grid, tile.x + dx, tile.y + dy));
       if (!open) {
         problems.push(
@@ -450,12 +504,12 @@ function whatIsThere(grid, x, y) {
 
 // --------------------------------------------------------- the map, as walked
 
-function checkTheMapAsWalked(grid, stations, gates, plaques, problems) {
+function checkTheMapAsWalked(grid, stations, gates, guides, problems) {
   // One grid per unlock state, so no check leaves marks on another one.
   const build = (isZoneUnlocked) => {
     const g = copyOf(grid);
     markSolid(g, stations, "station");
-    markSolid(g, plaques, "plaque");
+    markSolid(g, guides, "guide");
     lockGates(g, gates, isZoneUnlocked);
     return g;
   };
@@ -486,7 +540,7 @@ function checkTheMapAsWalked(grid, stations, gates, plaques, problems) {
   const everything = [
     ...stations.map((s) => ({ kind: "station", id: idOf(s), tile: s.tile })),
     ...gates.map((g) => ({ kind: "gate", id: idOf(g), tile: g.tile })),
-    ...plaques.map((p) => ({ kind: "plaque", id: plaqueId(p), tile: p.tile })),
+    ...guides.map((g) => ({ kind: "guide", id: guideId(g), tile: g.tile })),
   ];
   for (const { kind, id, tile } of everything) {
     if (!tile) continue;

@@ -247,23 +247,6 @@
   color: var(--focus);
 }
 
-/* ------------------------------------------------------------------ plaque */
-
-/*
-  A plaque has no sections and no receipt, so the level line is doing the work
-  the receipt does elsewhere: it is the one piece of the panel that states how
-  much effort this zone represents.
-*/
-.plaque-level {
-  margin: 0 0 clamp(14px, 2vh, 20px);
-  padding: 10px 14px;
-  border-left: 4px solid var(--accent);
-  background: #10151d;
-  border-radius: 0 8px 8px 0;
-  font-weight: 700;
-  color: var(--accent);
-}
-
 /* ---------------------------------------------------------------- receipt */
 
 .receipt {
@@ -559,4 +542,128 @@
   color: #dfe8f5;
   white-space: pre-wrap;
   word-break: break-word;
+}
+
+/* -------------------------------------------------------------- dialogue */
+
+/*
+  The guide dialogue box sits along the BOTTOM of the screen rather than in the
+  middle of it, and there is no backdrop. That is deliberate: you are meant to
+  keep seeing the map and the person you are talking to. A centred, dimmed modal
+  is a document you are reading; a box along the bottom is somebody talking.
+*/
+
+.overlay-dialogue {
+  align-items: flex-end;
+  justify-content: center;
+  padding: clamp(10px, 2.5vh, 28px);
+  /* The world behind stays live and clickable-through; only the box catches
+     the pointer. */
+  pointer-events: none;
+}
+
+.dialogue {
+  pointer-events: auto;
+  width: min(70ch, 96vw);
+  box-sizing: border-box;
+  background: var(--raised);
+  border: 3px solid var(--accent);
+  border-radius: 14px;
+  box-shadow: 0 18px 50px rgba(0, 0, 0, 0.7);
+  padding: clamp(14px, 2.4vh, 22px) clamp(16px, 3vw, 26px);
+}
+
+.dialogue-head {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: clamp(10px, 1.6vh, 16px);
+}
+
+/*
+  The speaker's own map sprite, cropped out of the atlas. Sized and positioned
+  from JavaScript via spriteRect(), because atlas geometry lives in the sprite
+  contract and nowhere else.
+*/
+.dialogue-portrait {
+  flex: 0 0 auto;
+  width: 48px;
+  height: 48px;
+  border: 2px solid var(--edge);
+  border-radius: 8px;
+  background-color: #10151d;
+  background-repeat: no-repeat;
+  image-rendering: pixelated;
+}
+
+.dialogue-name {
+  margin: 0;
+  font-size: clamp(16px, 1.9vw, 21px);
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  color: var(--accent);
+}
+
+.dialogue-text {
+  margin: 0;
+  min-height: 3.2em;
+  font-size: clamp(17px, 1.9vw, 22px);
+  line-height: 1.55;
+  color: var(--ink);
+}
+
+.dialogue-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  margin-top: clamp(10px, 1.8vh, 16px);
+}
+
+.dialogue-count {
+  font-size: clamp(13px, 1.4vw, 15px);
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  color: var(--ink-faint);
+}
+
+.dialogue-next {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  font: inherit;
+  font-size: clamp(14px, 1.5vw, 17px);
+  font-weight: 700;
+  color: var(--accent-ink);
+  background: var(--accent);
+  border: 2px solid var(--accent);
+  border-radius: 8px;
+  padding: 7px 16px;
+  cursor: pointer;
+  line-height: 1.2;
+}
+
+.dialogue-next:hover {
+  background: #ffd485;
+  border-color: #ffd485;
+}
+
+/* The nudge that says "there is more". Bobs rather than blinks: a shape that
+   disappears entirely reads as a glitch over a compressed video stream. */
+.dialogue-cue {
+  display: inline-block;
+  font-size: 1.05em;
+  line-height: 1;
+  animation: dialogue-bob 1.1s ease-in-out infinite;
+}
+
+@keyframes dialogue-bob {
+  0%, 100% { transform: translateY(-1px); }
+  50%      { transform: translateY(2px); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dialogue-cue {
+    animation: none;
+  }
 }

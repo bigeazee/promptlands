@@ -215,3 +215,71 @@ test("summary copes with nothing visited and with no stations passed in", () => 
   assert.match(noStations, /1 of 1/);
   assert.match(noStations, /cyoa/);
 });
+
+// ------------------------------------------------------------------- guides
+
+test("a guide you have spoken to is remembered, and survives a reload", () => {
+  const storage = fakeStorage();
+  const progress = createProgress(storage);
+
+  assert.equal(progress.hasSpokenTo("guide-zone-1"), false);
+  progress.markSpokenTo("guide-zone-1");
+  assert.equal(progress.hasSpokenTo("guide-zone-1"), true);
+
+  const reloaded = createProgress(storage);
+  assert.equal(reloaded.hasSpokenTo("guide-zone-1"), true);
+  assert.equal(reloaded.hasSpokenTo("guide-zone-2"), false);
+});
+
+test("markSpokenTo is idempotent and ignores rubbish", () => {
+  const progress = createProgress(fakeStorage());
+  progress.markSpokenTo("guide-zone-1");
+  progress.markSpokenTo("guide-zone-1");
+  assert.equal(progress.hasSpokenTo("guide-zone-1"), true);
+
+  assert.doesNotThrow(() => progress.markSpokenTo(""));
+  assert.doesNotThrow(() => progress.markSpokenTo(null));
+  assert.doesNotThrow(() => progress.markSpokenTo(7));
+  assert.equal(progress.hasSpokenTo(""), false);
+});
+
+test("reset forgets the guides too, so a fresh game is genuinely fresh", () => {
+  const storage = fakeStorage();
+  const progress = createProgress(storage);
+  progress.markSpokenTo("guide-zone-1");
+  progress.visit("cyoa");
+
+  progress.reset();
+  assert.equal(progress.hasSpokenTo("guide-zone-1"), false);
+  assert.equal(createProgress(storage).hasSpokenTo("guide-zone-1"), false);
+});
+
+test("a save written before guides existed still loads, with nobody met", () => {
+  // The shape localStorage held between Work Package 2 and this change. It must
+  // not throw and must not lose the progress it does carry.
+  const storage = fakeStorage();
+  storage.setItem(STORAGE_KEY, JSON.stringify({ visited: ["cyoa"], zones: [1, 2] }));
+
+  const progress = createProgress(storage);
+  assert.equal(progress.hasVisited("cyoa"), true);
+  assert.equal(progress.isZoneUnlocked(2), true);
+  assert.equal(progress.hasSpokenTo("guide-zone-1"), false);
+});
+
+test("a spoken list of the wrong shape is ignored rather than thrown", () => {
+  for (const spoken of ["guide-zone-1", 42, { "guide-zone-1": true }]) {
+    const storage = fakeStorage();
+    storage.setItem(STORAGE_KEY, JSON.stringify({ visited: [], zones: [1], spoken }));
+    const progress = createProgress(storage);
+    assert.equal(progress.hasSpokenTo("guide-zone-1"), false);
+  }
+});
+
+test("guides never count towards the visited-stations total", () => {
+  const progress = createProgress(fakeStorage());
+  progress.markSpokenTo("guide-zone-1");
+  progress.markSpokenTo("guide-zone-2");
+
+  assert.deepEqual(progress.visitedIds(), []);
+  assert.match(progress.summary([{ id: "cyoa", title: "Choose Your Own Adventure" }]), /0 of 1/);
+});

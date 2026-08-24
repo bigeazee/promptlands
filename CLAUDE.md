@@ -186,17 +186,24 @@ Three zones, unlocked in sequence, three stations each. The player starts in Zon
 One station per zone is a **flagship** — visually distinct on the map, because it is talked
 through live.
 
-### Zone plaques
+### Zone guides
 
-Each zone has a readable **plaque** object at its entrance stating that zone's theme and
-level. This is not decoration: it is what makes the gate answers legitimately discoverable
-in-zone, so that someone working through the game alone — with no live narration — can
-answer the gate honestly rather than guessing.
+Each zone has a **guide** near its entrance: a named character you walk up to and talk to,
+who tells you what this part of the map is and what level of effort it represents, a
+dialogue box at a time. This is not decoration — it is what makes the gate answers
+legitimately discoverable in-zone, so that someone working through the game alone, with no
+live narration, can answer the gate honestly rather than guessing.
+
+A guide says `lines` the first time and the shorter `repeat` once you have met them, so
+coming back is a reminder rather than the whole speech again. **Both gate answers live in a
+guide's `lines`**, never only in `repeat`: a returning player must not be the one who misses
+it. Guides live in `src/content/guides.js` and are identified by their zone, since there is
+exactly one each.
 
 ### Gate mechanic
 
 To pass from Zone 1 to Zone 2, and again from Zone 2 to Zone 3, the player answers one
-multiple-choice question **whose answer is discoverable in the stations and plaque of the
+multiple-choice question **whose answer is discoverable in the stations and guide of the
 zone they are currently in.** That is the point: you cannot skip the content.
 
 Wrong answers show a gentle "Not quite — the answer is somewhere in this zone" and allow

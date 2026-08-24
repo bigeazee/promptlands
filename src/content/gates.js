@@ -5,7 +5,7 @@
  * One question between each pair of zones. Answer it and the door opens.
  *
  * The rule that gives the mechanic its point: the answer must be discoverable in
- * the stations and the plaque of the zone the player is standing in. Nobody
+ * the stations and the guide of the zone the player is standing in. Nobody
  * should have to guess, and nobody should be able to skip a zone's content by
  * guessing. If you rewrite a question, check that the zone behind it still
  * answers it.

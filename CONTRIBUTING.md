@@ -154,7 +154,7 @@ site by getting one wrong — but knowing them saves a round trip.
    stand *next* to one rather than on it. The tile itself must be plain ground
    in the map's ASCII grid — grass (`.`), the gravel plaza (`%`), the zone 3
    decking (`_`) — not a tree, a wall or a fence.
-2. **Nothing else can be on it.** No other station, no gate, no plaque.
+2. **Nothing else can be on it.** No other station, no gate, no guide.
 3. **It needs a walkable neighbour**, or nobody can stand next to it to press E.
 4. **It has to be close to its neighbours.** Within a zone, stations are walked
    between in order from west to east, and no two stations that follow one
@@ -211,13 +211,15 @@ The rules it enforces:
 | A zone that is not 1, 2 or 3 | There are three zones |
 | A zone with more or fewer than three stations | The zones have to be the same size for the curve to read |
 | A zone with more or fewer than one flagship | One per zone gets talked through live |
-| A zone with more or fewer than one plaque | The plaque is what makes that zone's gate answer findable |
+| A zone with more or fewer than one guide | The guide is what makes that zone's gate answer findable |
 | `demo.type` that is not `placeholder` or `external` | `embedded` is not implemented yet |
 | A sprite name that is not in `sprites.js` | A typo would be a hole in the live site |
 | A tile off the map, or on a solid tile | You could never reach it |
 | Two things on the same tile | Only the first one could ever be opened |
 | A station walled in on all four sides | Nobody could stand next to it |
 | A gate without exactly one correct answer | Nobody could pass it, or everybody could |
+| A guide's dialogue line over 140 characters | It would overflow the box on the day |
+| A guide drawn with an opaque sprite | They would arrive as a hole in the ground |
 | A hole in a zone barrier | Somebody could skip a whole zone's content |
 | Adjacent stations more than 17 tiles apart | Dead air in the middle of a talk |
 

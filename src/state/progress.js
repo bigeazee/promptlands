@@ -26,6 +26,8 @@ export const STORAGE_KEY = "promptlands.v1";
  *   hasVisited: (stationId: string) => boolean,
  *   visit: (stationId: string) => void,
  *   visitedIds: () => string[],
+ *   hasSpokenTo: (guideId: string) => boolean,
+ *   markSpokenTo: (guideId: string) => void,
  *   isZoneUnlocked: (zoneId: number) => boolean,
  *   unlockZone: (zoneId: number) => void,
  *   highestZone: () => number,
@@ -39,6 +41,12 @@ export function createProgress(storage) {
   const visitedSet = new Set();
   /** Unlocked zone ids. Zone 1 is where the player starts, so it is never absent. */
   const unlocked = new Set([1]);
+  /**
+   * Guides already spoken to, so a second conversation is the short version.
+   * Kept apart from `visited` on purpose: the HUD counts stations, and a guide
+   * must never make it read 10 of 9.
+   */
+  const spoken = new Set();
 
   load();
 
@@ -62,6 +70,11 @@ export function createProgress(storage) {
     if (Array.isArray(parsed.zones)) {
       for (const zoneId of parsed.zones) addZone(zoneId);
     }
+    // Absent in saves written before guides existed, which is why this is a
+    // separate check and not an else. Those loads simply start with nobody met.
+    if (Array.isArray(parsed.spoken)) {
+      for (const id of parsed.spoken) addSpokenTo(id);
+    }
   }
 
   function read() {
@@ -78,7 +91,11 @@ export function createProgress(storage) {
       if (!storage || typeof storage.setItem !== "function") return;
       storage.setItem(
         STORAGE_KEY,
-        JSON.stringify({ visited, zones: [...unlocked].sort((a, b) => a - b) })
+        JSON.stringify({
+          visited,
+          zones: [...unlocked].sort((a, b) => a - b),
+          spoken: [...spoken],
+        })
       );
     } catch {
       // Storage full, or a profile that refuses to write. The in-memory game
@@ -90,6 +107,12 @@ export function createProgress(storage) {
     if (typeof id !== "string" || id === "" || visitedSet.has(id)) return false;
     visitedSet.add(id);
     visited.push(id);
+    return true;
+  }
+
+  function addSpokenTo(id) {
+    if (typeof id !== "string" || id === "" || spoken.has(id)) return false;
+    spoken.add(id);
     return true;
   }
 
@@ -112,6 +135,15 @@ export function createProgress(storage) {
     /** A copy, in first-seen order. Callers must not be able to edit our state. */
     visitedIds() {
       return visited.slice();
+    },
+
+    hasSpokenTo(guideId) {
+      return spoken.has(guideId);
+    },
+
+    /** Idempotent, and on disk before it returns. */
+    markSpokenTo(guideId) {
+      if (addSpokenTo(guideId)) save();
     },
 
     isZoneUnlocked(zoneId) {
@@ -137,6 +169,7 @@ export function createProgress(storage) {
     reset() {
       visited.length = 0;
       visitedSet.clear();
+      spoken.clear();
       unlocked.clear();
       unlocked.add(1);
       try {

@@ -4,7 +4,7 @@
  *
  * The two jobs that turn content coordinates into collision:
  *
- *   markSolid   you stand NEXT TO a station or a plaque, never on top of it
+ *   markSolid   you stand NEXT TO a station or a guide, never on top of it
  *   lockGates   a gate is a wall until its zone is unlocked
  *
  * Pure. Both mutate the `solid` layer of the grid they are handed and nothing
@@ -18,7 +18,7 @@
  * thrown error rather than trusted - see mapSaidSolid() for how that is kept
  * compatible with lockGates being callable over and over.
  *
- * Error messages name the definition's key - a station or gate `id`, a plaque's
+ * Error messages name the definition's key - a station or gate `id`, a guide's
  * zone - not a row and column. A broken definition has no row and column: see
  * CLAUDE.md section 9. The person reading the message has usually just added
  * one object to stations.js by hand.
@@ -32,10 +32,10 @@ import { index } from "./tilemap.js";
  * Called once per kind at boot, before the player can move, and idempotent if
  * it is ever called again.
  *
- * `kind` is the noun the error messages use - "station", "plaque" - because a
+ * `kind` is the noun the error messages use - "station", "guide" - because a
  * message that names the wrong kind of thing sends the reader to the wrong
  * file. Items identify themselves by `id` or, where there is exactly one per
- * zone and an id would be busywork, by `zone`; plaques are the latter and pass
+ * zone and an id would be busywork, by `zone`; guides are the latter and pass
  * through here unchanged. See labelFor().
  *
  * @param {object} grid parseMap result
@@ -47,7 +47,7 @@ export function markSolid(grid, items, kind) {
     throw new Error(`markSolid: ${kind || "items"} must be an array.`);
   }
   if (typeof kind !== "string" || kind === "") {
-    throw new Error('markSolid: needs a kind, the noun for these items - "station" or "plaque".');
+    throw new Error('markSolid: needs a kind, the noun for these items - "station" or "guide".');
   }
   for (const item of items) {
     const { x, y } = requireWalkableTile(grid, item, kind, "markSolid");
@@ -122,10 +122,10 @@ function requireWalkableTile(grid, definition, kind, caller) {
 /**
  * What to call this definition in an error message.
  *
- * `id` where there is one. Where there is not - a plaque, of which there is
+ * `id` where there is one. Where there is not - a guide, of which there is
  * exactly one per zone, so the zone IS the identity - the zone. CLAUDE.md
  * section 9: a fault in a definition names the key it belongs to, and for a
- * plaque that key is its zone.
+ * guide that key is its zone.
  */
 function labelFor(definition) {
   if (typeof definition.id === "string" && definition.id !== "") return definition.id;

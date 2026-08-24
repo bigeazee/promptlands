@@ -26,12 +26,12 @@ import assert from "node:assert/strict";
 import { MAX_WALK_TILES, RECEIPT_FIELDS, validateContent } from "../src/content/validate.js";
 import { gates } from "../src/content/gates.js";
 import { legend, mapDef } from "../src/content/map.js";
-import { plaques } from "../src/content/plaques.js";
+import { guides } from "../src/content/guides.js";
 import { stations } from "../src/content/stations.js";
 
 /** The real content, deep-copied, with one thing broken in it. */
 function brokenContent(mutate) {
-  const bundle = structuredClone({ stations, gates, plaques, mapDef, legend });
+  const bundle = structuredClone({ stations, gates, guides, mapDef, legend });
   if (mutate) mutate(bundle);
   return validateContent(bundle);
 }
@@ -61,7 +61,7 @@ function setTile(bundle, x, y, char) {
 // ============================================================== the real thing
 
 test("the real content is valid: no problems at all", () => {
-  const problems = validateContent({ stations, gates, plaques, mapDef, legend });
+  const problems = validateContent({ stations, gates, guides, mapDef, legend });
   assert.deepEqual(
     problems,
     [],
@@ -86,7 +86,7 @@ test("validateContent collects every problem instead of stopping at the first", 
 test("validateContent never throws, whatever it is handed", () => {
   assert.doesNotThrow(() => validateContent());
   assert.doesNotThrow(() => validateContent({}));
-  assert.doesNotThrow(() => validateContent({ stations: 7, gates: null, plaques: "no" }));
+  assert.doesNotThrow(() => validateContent({ stations: 7, gates: null, guides: "no" }));
   assert.ok(validateContent({}).length > 0, "and it still reports what is wrong");
 });
 
@@ -277,11 +277,11 @@ test("an unknown gate sprite fires, for both the locked and unlocked sprite", ()
   fires(unlocked, /Gate "gate-1-2" uses spriteUnlocked "portcullis"/);
 });
 
-test("an unknown plaque sprite fires", () => {
+test("an unknown guide sprite fires", () => {
   const problems = brokenContent((bundle) => {
-    bundle.plaques[0].sprite = "billboard";
+    bundle.guides[0].sprite = "billboard";
   });
-  fires(problems, /The plaque for zone 1 uses sprite "billboard"/);
+  fires(problems, /The guide for zone 1 uses sprite "billboard"/);
 });
 
 test("an unknown sprite in the map legend fires, naming the legend character", () => {
@@ -334,45 +334,100 @@ test("two gates with the same id fires", () => {
   fires(problems, /two gates with the id "gate-1-2"/);
 });
 
-// ------------------------------------------------------------------ plaques
+// ------------------------------------------------------------------ guides
 
-test("a zone without exactly one plaque fires, naming the zone", () => {
+test("a zone without exactly one guide fires, naming the zone", () => {
   const none = brokenContent((bundle) => {
-    bundle.plaques = bundle.plaques.filter((plaque) => plaque.zone !== 2);
+    bundle.guides = bundle.guides.filter((guide) => guide.zone !== 2);
   });
-  fires(none, /Zone 2 has 0 plaques\. Every zone has exactly one/);
+  fires(none, /Zone 2 has 0 guides\. Every zone has exactly one/);
 
   const two = brokenContent((bundle) => {
-    const extra = structuredClone(bundle.plaques[0]);
+    const extra = structuredClone(bundle.guides[0]);
     extra.zone = 3;
     extra.tile = { x: 66, y: 8 };
-    bundle.plaques.push(extra);
+    bundle.guides.push(extra);
   });
-  fires(two, /Zone 3 has 2 plaques/);
+  fires(two, /Zone 3 has 2 guides/);
 });
 
-test("a plaque missing a field fires, naming the zone it belongs to", () => {
-  for (const field of ["title", "level", "body"]) {
+test("a guide missing a field fires, naming the zone it belongs to", () => {
+  for (const field of ["name", "sprite"]) {
     const problems = brokenContent((bundle) => {
-      bundle.plaques[1][field] = "";
+      bundle.guides[1][field] = "";
     });
-    const message = fires(problems, new RegExp(`The plaque for zone 2 needs a non-empty "${field}"`));
+    const message = fires(problems, new RegExp(`The guide for zone 2 needs a non-empty "${field}"`));
     assert.ok(!/row \d/.test(message), "a definition fault has no row and column");
   }
 });
 
-test("a plaque with a receipt fires: a plaque is not a station", () => {
-  const problems = brokenContent((bundle) => {
-    bundle.plaques[0].receipt = { buildTime: "an afternoon" };
+test("a guide with no lines fires: a guide with nothing to say is not a guide", () => {
+  const missing = brokenContent((bundle) => {
+    delete bundle.guides[0].lines;
   });
-  fires(problems, /The plaque for zone 1 has a receipt\. A plaque is not a station/);
+  fires(missing, /The guide for zone 1 needs "lines"/);
+
+  const empty = brokenContent((bundle) => {
+    bundle.guides[0].lines = [];
+  });
+  fires(empty, /The guide for zone 1 has an empty "lines"/);
+
+  const notArray = brokenContent((bundle) => {
+    bundle.guides[0].lines = "just the one thing";
+  });
+  fires(notArray, /The guide for zone 1 has "lines" that is not an array/);
 });
 
-test("a plaque in a zone that does not exist fires", () => {
+test("an empty dialogue box fires, naming which one", () => {
   const problems = brokenContent((bundle) => {
-    bundle.plaques[0].zone = 9;
+    bundle.guides[2].lines[1] = "   ";
   });
-  fires(problems, /A plaque has zone 9\. It must be one of 1, 2, 3\./);
+  fires(problems, /The guide for zone 3 has an empty entry at lines\[1\]/);
+});
+
+test("a dialogue line too long for the box fires, giving its length", () => {
+  const problems = brokenContent((bundle) => {
+    bundle.guides[1].lines[0] = "x".repeat(200);
+  });
+  const message = fires(problems, /The guide for zone 2 has lines\[0\] at 200 characters/);
+  assert.match(message, /Split it into two entries/);
+});
+
+test("repeat is optional, but the same shape when it is there", () => {
+  const withoutRepeat = brokenContent((bundle) => {
+    delete bundle.guides[0].repeat;
+  });
+  assert.ok(
+    !withoutRepeat.some((p) => /"repeat"/.test(p)),
+    "a guide with no repeat is legal: they simply say everything again"
+  );
+
+  const badRepeat = brokenContent((bundle) => {
+    bundle.guides[0].repeat = ["y".repeat(200)];
+  });
+  fires(badRepeat, /The guide for zone 1 has repeat\[0\] at 200 characters/);
+});
+
+test("an opaque sprite fires: a guide drawn as a terrain tile is a hole in the ground", () => {
+  const problems = brokenContent((bundle) => {
+    bundle.guides[0].sprite = "grass";
+  });
+  const message = fires(problems, /The guide for zone 1 uses sprite "grass", which is an opaque/);
+  assert.match(message, /npc_/);
+});
+
+test("a guide with a receipt fires: a guide is not a station", () => {
+  const problems = brokenContent((bundle) => {
+    bundle.guides[0].receipt = { buildTime: "an afternoon" };
+  });
+  fires(problems, /The guide for zone 1 has a receipt\. A guide is not a station/);
+});
+
+test("a guide in a zone that does not exist fires", () => {
+  const problems = brokenContent((bundle) => {
+    bundle.guides[0].zone = 9;
+  });
+  fires(problems, /A guide has zone 9\. It must be one of 1, 2, 3\./);
 });
 
 // ============================================================== placement
@@ -403,12 +458,12 @@ test("two things on the same tile fires - the case zones.js deliberately misses"
     /The gate "gate-1-2" and the station "meeting-cost-meter" are both on tile \(30, 10\)/
   );
 
-  const plaqueOnStation = brokenContent((bundle) => {
-    bundle.plaques[0].tile = { ...station(bundle, "cyoa").tile };
+  const guideOnStation = brokenContent((bundle) => {
+    bundle.guides[0].tile = { ...station(bundle, "cyoa").tile };
   });
   fires(
-    plaqueOnStation,
-    /The plaque "plaque-zone-1" and the station "cyoa" are both on tile \(10, 8\)/
+    guideOnStation,
+    /The guide "guide-zone-1" and the station "cyoa" are both on tile \(10, 8\)/
   );
 });
 

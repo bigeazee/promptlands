@@ -145,6 +145,7 @@ licence and updating `CREDITS.md`.
   content/       stations.js, gates.js, map.js, sprites.js
   state/         progress, localStorage
 /assets/         Kenney sprites
+/demos/          the playable tools stations link out to, one directory each, same rules as above
 /tests/
 /.github/workflows/
 /README.md       what it is, how to play, how to run locally, desktop-only note, how to contribute

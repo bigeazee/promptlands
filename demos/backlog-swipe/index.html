@@ -1,0 +1,2142 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Backlog Swipe — PromptLands</title>
+
+    <!--
+      Two overlapping cards, inlined as an SVG data URI. Inlined rather than
+      shipped as a file for the same reason the game does it: a file would cost
+      a request, and a missing one is a 404. An explicit icon link is also what
+      stops the browser probing /favicon.ico in the first place.
+    -->
+    <link
+      rel="icon"
+      href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%230d0f14'/%3E%3Crect x='6' y='8' width='13' height='18' rx='3' fill='%231f2736' stroke='%2333405a' stroke-width='2' transform='rotate(-8 12 17)'/%3E%3Crect x='13' y='7' width='13' height='18' rx='3' fill='%23171d28' stroke='%23ffc861' stroke-width='2' transform='rotate(7 19 16)'/%3E%3C/svg%3E"
+    />
+
+    <style>
+      /*
+        BACKLOG SWIPE
+        =============
+
+        The tokens below are lifted from the game's src/ui/ui.css so that this
+        page and PromptLands feel like one product. If you change them there,
+        change them here - there is deliberately no shared stylesheet, because
+        this demo has to work if you copy the folder somewhere else.
+
+        LEGIBILITY OUTRANKS EVERYTHING. This ends up on a shared screen during a
+        talk, and it gets opened on a phone by somebody on a train. Large type,
+        heavy contrast, and one decision filling the view.
+
+        NO WEBFONTS. This page makes no network requests of any kind - not for a
+        font, not for anything - so the stack below is what the machine already
+        has. Segoe UI first among the named faces because Edge on Windows is the
+        commonest browser for the people this was built for.
+      */
+      :root {
+        color-scheme: dark;
+
+        --ink: #f2f6fc;
+        --ink-soft: #b3c0d4;
+        --ink-faint: #8794a9;
+        --sunk: #0d0f14;
+        --raised: #171d28;
+        --raised-2: #1f2736;
+        --deep: #10151d;
+        --edge: #33405a;
+        --accent: #ffc861;
+        --accent-ink: #1a1206;
+        --good: #7ee0a8;
+        --focus: #7fd2ff;
+        --hair: #232c3c;
+      }
+
+      *,
+      *::before,
+      *::after {
+        box-sizing: border-box;
+      }
+
+      [hidden] {
+        display: none !important;
+      }
+
+      html,
+      body {
+        margin: 0;
+        min-height: 100%;
+        /* A card being dragged translates past the edge of the screen, and a
+           transformed box still counts towards the scrollable area. Without
+           this, every drag on a phone scrolls the page sideways or rubber-bands.
+           It has to be on the ROOT element: overflow set on body alone gets
+           propagated to the viewport rather than clipping the card. */
+        overflow-x: clip;
+      }
+
+      body {
+        background: var(--sunk);
+        color: var(--ink);
+        font-family: system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+        font-size: clamp(16px, 1.7vw, 19px);
+        line-height: 1.55;
+      }
+
+      .wrap {
+        width: min(940px, 100%);
+        margin: 0 auto;
+        padding: clamp(20px, 4vw, 48px) clamp(16px, 4vw, 24px) clamp(40px, 6vw, 64px);
+      }
+
+      h1,
+      h2,
+      h3 {
+        margin: 0;
+        line-height: 1.15;
+        letter-spacing: -0.012em;
+      }
+
+      h1 {
+        font-size: clamp(30px, 5vw, 46px);
+      }
+
+      h2 {
+        font-size: clamp(21px, 2.6vw, 26px);
+      }
+
+      p {
+        margin: 0;
+      }
+
+      a {
+        color: var(--focus);
+      }
+
+      a:hover {
+        color: #a9e2ff;
+      }
+
+      code,
+      pre {
+        font-family: ui-monospace, "Cascadia Mono", Consolas, "Liberation Mono", monospace;
+      }
+
+      code {
+        font-size: 0.9em;
+        color: #dfe8f5;
+        background: var(--deep);
+        border: 1px solid var(--edge);
+        border-radius: 4px;
+        padding: 1px 5px;
+      }
+
+      :focus-visible {
+        outline: 3px solid var(--focus);
+        outline-offset: 3px;
+      }
+
+      /*
+        The headings take focus when a screen changes, so that a keyboard or a
+        screen reader lands on the new thing rather than wherever the old button
+        used to be. They are never reachable by Tab, so a ring on them is noise
+        rather than a cue.
+      */
+      h1[tabindex="-1"]:focus,
+      h2[tabindex="-1"]:focus {
+        outline: none;
+      }
+
+      .eyebrow {
+        font-size: clamp(12px, 1.3vw, 14px);
+        font-weight: 700;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+        color: var(--accent);
+      }
+
+      .lede {
+        max-width: 62ch;
+        font-size: clamp(17px, 2vw, 21px);
+        line-height: 1.5;
+        color: var(--ink-soft);
+        text-wrap: pretty;
+      }
+
+      .muted {
+        color: var(--ink-soft);
+      }
+
+      .faint {
+        color: var(--ink-faint);
+        font-size: 0.85em;
+      }
+
+      .stack {
+        display: flex;
+        flex-direction: column;
+        gap: clamp(14px, 2.4vw, 22px);
+      }
+
+      .row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px;
+      }
+
+      /* ------------------------------------------------------------ buttons */
+
+      .button {
+        font: inherit;
+        font-size: clamp(15px, 1.6vw, 17px);
+        font-weight: 600;
+        color: var(--ink);
+        background: var(--raised-2);
+        border: 2px solid var(--edge);
+        border-radius: 9px;
+        padding: 12px 18px;
+        cursor: pointer;
+        line-height: 1.2;
+      }
+
+      .button:hover {
+        background: #2a3446;
+        border-color: #4a5b7d;
+      }
+
+      .button-strong {
+        font-weight: 700;
+        background: var(--accent);
+        border-color: var(--accent);
+        color: var(--accent-ink);
+      }
+
+      .button-strong:hover {
+        background: #ffd485;
+        border-color: #ffd485;
+      }
+
+      .button-big {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 11px;
+        font-size: clamp(16px, 1.8vw, 19px);
+        padding: 15px 24px;
+      }
+
+      .button-wide {
+        width: 100%;
+      }
+
+      /* File inputs are unstyleable, so the real one is hidden behind a label
+         that looks like a button. The input keeps the keyboard behaviour. */
+      .file-input {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        opacity: 0;
+        pointer-events: none;
+      }
+
+      .file-input:focus-visible + .button-label {
+        outline: 3px solid var(--focus);
+        outline-offset: 3px;
+      }
+
+      .button-label {
+        display: inline-block;
+      }
+
+      /* ------------------------------------------------------------- cards */
+
+      .card-panel {
+        padding: clamp(20px, 3vw, 30px);
+        background: var(--raised);
+        border: 3px solid var(--edge);
+        border-radius: 14px;
+      }
+
+      .card-gold {
+        background: #12171f;
+        border-color: var(--accent);
+      }
+
+      /* ------------------------------------------------------------- start */
+
+      .ways-in {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 20px;
+      }
+
+      .way {
+        display: flex;
+        flex-direction: column;
+        gap: 14px;
+      }
+
+      .way h3 {
+        font-size: clamp(18px, 2.1vw, 22px);
+      }
+
+      .way .button-label,
+      .way .button {
+        margin-top: auto;
+        align-self: flex-start;
+      }
+
+      .steps {
+        margin: 0;
+        padding: 0;
+        list-style: none;
+        display: grid;
+        gap: 18px;
+        counter-reset: step;
+      }
+
+      .steps li {
+        display: flex;
+        align-items: flex-start;
+        gap: 18px;
+      }
+
+      .steps li::before {
+        counter-increment: step;
+        content: counter(step);
+        flex: 0 0 auto;
+        display: grid;
+        place-items: center;
+        width: 34px;
+        height: 34px;
+        border-radius: 9px;
+        background: var(--raised-2);
+        border: 2px solid var(--edge);
+        font-size: 16px;
+        font-weight: 700;
+        color: var(--accent);
+      }
+
+      /* ------------------------------------------------------------ swiping */
+
+      .topbar {
+        display: flex;
+        align-items: flex-end;
+        justify-content: space-between;
+        gap: 20px;
+        flex-wrap: wrap;
+      }
+
+      .placed-count {
+        font-size: clamp(17px, 1.9vw, 20px);
+        font-weight: 700;
+        line-height: 1.2;
+      }
+
+      .placed-count b {
+        color: var(--accent);
+      }
+
+      .segments {
+        display: flex;
+        gap: 3px;
+        width: min(470px, 100%);
+        margin-top: 9px;
+      }
+
+      .segments span {
+        flex: 1 1 0;
+        height: 9px;
+        border-radius: 2px;
+        background: #2a3446;
+      }
+
+      .segments span.is-placed {
+        background: var(--accent);
+      }
+
+      .segments span.is-live {
+        background: #7a5f2c;
+      }
+
+      .dots {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 10px;
+        font-size: clamp(13px, 1.4vw, 15px);
+        font-weight: 600;
+        color: var(--ink-faint);
+      }
+
+      .dots i {
+        display: flex;
+        gap: 6px;
+      }
+
+      .dots i span {
+        width: 9px;
+        height: 9px;
+        border-radius: 999px;
+        background: #2a3446;
+      }
+
+      .dots i span.is-done {
+        background: var(--accent);
+      }
+
+      .question {
+        text-align: center;
+        font-size: clamp(24px, 3.4vw, 34px);
+      }
+
+      /*
+        Two cards, equal weight, and NEITHER is marked as the one being placed.
+        That is the whole point of this layout: no card is the subject, so
+        neither gets the benefit of being read first.
+      */
+      .versus {
+        display: flex;
+        align-items: stretch;
+        gap: clamp(14px, 2.4vw, 24px);
+      }
+
+      .choice {
+        flex: 1 1 0;
+        min-width: 0;
+        position: relative;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        gap: clamp(12px, 2vw, 20px);
+        text-align: left;
+        font: inherit;
+        color: var(--ink);
+        padding: clamp(20px, 3vw, 34px) clamp(18px, 2.6vw, 32px);
+        min-height: clamp(210px, 42vh, 420px);
+        background: var(--raised);
+        border: 3px solid var(--edge);
+        border-radius: 20px;
+        box-shadow: 0 22px 56px rgba(0, 0, 0, 0.55);
+        cursor: pointer;
+        overflow: hidden;
+        touch-action: pan-y;
+        transition: transform 150ms ease-out, opacity 150ms ease-out,
+          border-color 150ms ease-out, box-shadow 150ms ease-out;
+      }
+
+      .choice:hover {
+        border-color: #4a5b7d;
+      }
+
+      .choice-key {
+        display: grid;
+        place-items: center;
+        width: 40px;
+        height: 40px;
+        border-radius: 9px;
+        background: var(--raised-2);
+        border: 2px solid var(--edge);
+        color: var(--ink-soft);
+        font-size: 20px;
+        font-weight: 800;
+      }
+
+      .choice-id {
+        font-family: ui-monospace, "Cascadia Mono", Consolas, "Liberation Mono", monospace;
+        font-size: clamp(12px, 1.3vw, 14px);
+        font-weight: 600;
+        letter-spacing: 0.06em;
+        color: var(--ink-faint);
+      }
+
+      .choice-title {
+        font-size: clamp(21px, 2.9vw, 31px);
+        line-height: 1.2;
+        font-weight: 700;
+        text-wrap: balance;
+      }
+
+      .choice-stamp {
+        position: absolute;
+        top: 20px;
+        padding: 7px 14px;
+        border: 4px solid var(--accent);
+        border-radius: 9px;
+        font-size: clamp(15px, 1.8vw, 19px);
+        font-weight: 800;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        color: var(--accent);
+        opacity: 0;
+        transition: opacity 110ms ease-out;
+        pointer-events: none;
+      }
+
+      .choice-left .choice-stamp {
+        right: 22px;
+        transform: rotate(-8deg);
+      }
+
+      .choice-right .choice-stamp {
+        left: 22px;
+        transform: rotate(8deg);
+      }
+
+      .choice.is-picking {
+        border-color: var(--accent);
+        box-shadow: 0 26px 62px rgba(255, 200, 97, 0.17), 0 22px 56px rgba(0, 0, 0, 0.55);
+      }
+
+      .choice.is-picking .choice-stamp {
+        opacity: 1;
+      }
+
+      .choice.is-dimmed {
+        opacity: 0.4;
+        transform: scale(0.975);
+      }
+
+      /* Mid-drag the card follows the pointer, so the transition would fight it. */
+      .choice.is-dragging {
+        transition: none;
+        cursor: grabbing;
+      }
+
+      .versus-or {
+        flex: 0 0 auto;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 14px;
+        font-size: 15px;
+        font-weight: 700;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+        color: var(--ink-faint);
+      }
+
+      .versus-or::before,
+      .versus-or::after {
+        content: "";
+        width: 2px;
+        flex: 1 1 auto;
+        background: var(--hair);
+      }
+
+      /* ------------------------------------------------------------ results */
+
+      .results-columns {
+        display: flex;
+        align-items: flex-start;
+        gap: 28px;
+      }
+
+      .ranked {
+        flex: 1 1 auto;
+        min-width: 0;
+        margin: 0;
+        padding: 0;
+        list-style: none;
+        border: 2px solid var(--edge);
+        border-radius: 12px;
+        background: var(--raised);
+        overflow: hidden;
+      }
+
+      .ranked li {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        padding: 11px 18px;
+        border-bottom: 1px solid var(--hair);
+        font-size: clamp(15px, 1.6vw, 17px);
+        line-height: 1.4;
+      }
+
+      .ranked li:last-child {
+        border-bottom: 0;
+      }
+
+      .ranked .rank {
+        flex: 0 0 auto;
+        width: 30px;
+        text-align: right;
+        font-family: ui-monospace, "Cascadia Mono", Consolas, "Liberation Mono", monospace;
+        font-size: 16px;
+        font-weight: 700;
+        color: var(--ink-faint);
+      }
+
+      .ranked li:nth-child(-n + 3) .rank {
+        font-size: 19px;
+        color: var(--accent);
+      }
+
+      .ranked .title {
+        flex: 1 1 auto;
+        min-width: 0;
+      }
+
+      .ranked .id {
+        flex: 0 0 auto;
+        font-family: ui-monospace, "Cascadia Mono", Consolas, "Liberation Mono", monospace;
+        font-size: 13px;
+        color: var(--ink-faint);
+      }
+
+      /*
+        Gold, pinned, and the only gold thing on the screen. A sorted list is a
+        satisfying place to stop, and stopping here is the one outcome that
+        makes the whole tool pointless.
+      */
+      .whatnow {
+        flex: 0 0 352px;
+        position: sticky;
+        top: 24px;
+        display: flex;
+        flex-direction: column;
+        gap: 20px;
+        padding: 26px 24px;
+        background: #12171f;
+        border: 3px solid var(--accent);
+        border-radius: 14px;
+      }
+
+      .field {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+      }
+
+      .field label {
+        font-size: 13px;
+        font-weight: 700;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        color: var(--ink-faint);
+      }
+
+      .field input {
+        width: 100%;
+        font: inherit;
+        font-size: 17px;
+        color: var(--ink);
+        background: var(--deep);
+        border: 2px solid var(--edge);
+        border-radius: 8px;
+        padding: 11px 13px;
+      }
+
+      .sendthis {
+        padding: 14px 15px;
+        background: var(--deep);
+        border: 2px solid var(--edge);
+        border-radius: 10px;
+      }
+
+      .sendthis p {
+        font-size: 15px;
+        line-height: 1.55;
+        color: #dfe8f5;
+      }
+
+      .divide {
+        padding-top: 18px;
+        border-top: 2px solid #2a3446;
+      }
+
+      .format {
+        margin-top: 40px;
+        padding-top: 30px;
+        border-top: 2px solid var(--hair);
+      }
+
+      .format pre {
+        margin: 14px 0 0;
+        padding: 16px 18px;
+        background: var(--deep);
+        border: 2px solid var(--edge);
+        border-radius: 10px;
+        font-size: clamp(12px, 1.35vw, 14px);
+        line-height: 1.55;
+        color: #dfe8f5;
+        overflow-x: auto;
+      }
+
+      /* ------------------------------------------------------ disagreement */
+
+      .diff {
+        border: 2px solid var(--edge);
+        border-radius: 12px;
+        background: var(--raised);
+        overflow: hidden;
+      }
+
+      .diff-head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 20px;
+        padding: 13px 20px;
+        background: var(--raised-2);
+        border-bottom: 2px solid var(--edge);
+        font-size: 13px;
+        font-weight: 700;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: var(--ink-faint);
+      }
+
+      .who {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 15px;
+        letter-spacing: normal;
+        text-transform: none;
+        color: var(--ink);
+      }
+
+      .who i {
+        width: 13px;
+        height: 13px;
+        border-radius: 999px;
+      }
+
+      .who-a i {
+        background: var(--accent);
+      }
+
+      .who-b i {
+        background: var(--focus);
+      }
+
+      .diff-row {
+        display: flex;
+        align-items: center;
+        gap: 20px;
+        padding: 10px 20px;
+        border-bottom: 1px solid var(--hair);
+      }
+
+      .diff-row:last-child {
+        border-bottom: 0;
+      }
+
+      .diff-title {
+        flex: 1 1 auto;
+        min-width: 0;
+        font-size: clamp(15px, 1.6vw, 17px);
+        line-height: 1.35;
+        font-weight: 600;
+      }
+
+      /*
+        One marker above the rail and one below, ALWAYS. They never collide
+        however small the gap, and a gap of one place is what two similar
+        rankings mostly produce. The bar between them is the gap, so sorted
+        biggest-first the column reads as a shape before anybody reads a number.
+      */
+      .track {
+        flex: 0 0 min(372px, 40%);
+        padding: 0 16px;
+      }
+
+      .track-inner {
+        position: relative;
+        height: 58px;
+      }
+
+      .track-rail {
+        position: absolute;
+        left: 0;
+        right: 0;
+        top: 28px;
+        height: 2px;
+        background: var(--hair);
+      }
+
+      .track-bar {
+        position: absolute;
+        top: 26px;
+        height: 6px;
+        border-radius: 3px;
+      }
+
+      .marker {
+        position: absolute;
+        transform: translateX(-50%);
+        display: grid;
+        place-items: center;
+        width: 28px;
+        height: 28px;
+        border-radius: 999px;
+        font-size: 13px;
+        font-weight: 800;
+      }
+
+      .marker-a {
+        top: 0;
+        background: var(--accent);
+        color: var(--accent-ink);
+      }
+
+      .marker-b {
+        bottom: 0;
+        background: var(--focus);
+        color: var(--sunk);
+      }
+
+      .gap {
+        flex: 0 0 74px;
+        text-align: right;
+      }
+
+      .gap b {
+        font-size: clamp(21px, 2.4vw, 27px);
+        font-weight: 800;
+        line-height: 1;
+      }
+
+      .gap span {
+        display: block;
+        margin-top: 2px;
+        font-size: 12px;
+        font-weight: 600;
+        color: var(--ink-faint);
+      }
+
+      .fold {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        width: 100%;
+        text-align: left;
+        font: inherit;
+        font-size: clamp(14px, 1.5vw, 16px);
+        line-height: 1.45;
+        color: var(--ink-soft);
+        padding: 16px 20px;
+        background: #131924;
+        border: 0;
+        border-top: 1px solid var(--hair);
+        cursor: pointer;
+      }
+
+      .fold:hover {
+        background: #182031;
+      }
+
+      .fold b {
+        color: var(--good);
+      }
+
+      .fold svg {
+        flex: 0 0 auto;
+        transition: transform 140ms ease-out;
+      }
+
+      .fold[aria-expanded="true"] svg {
+        transform: rotate(180deg);
+      }
+
+      .onlyin {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 22px;
+      }
+
+      .onlyin h3 {
+        font-size: 13px;
+        font-weight: 700;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+      }
+
+      .onlyin ul {
+        margin: 8px 0 0;
+        padding-left: 1.2em;
+        font-size: clamp(15px, 1.6vw, 16px);
+      }
+
+      /* ------------------------------------------------------------ notices */
+
+      /*
+        Amber, never red. Nothing that happens here is the reader's fault, and a
+        red panel on a shared screen reads as a crash.
+      */
+      .notice {
+        display: flex;
+        gap: 15px;
+        padding: 18px 20px;
+        background: var(--raised);
+        border: 2px solid var(--edge);
+        border-radius: 12px;
+      }
+
+      .notice svg {
+        flex: 0 0 auto;
+        margin-top: 3px;
+      }
+
+      .notice b {
+        display: block;
+        margin-bottom: 5px;
+        font-size: clamp(16px, 1.8vw, 18px);
+        color: var(--accent);
+      }
+
+      .notice p {
+        font-size: clamp(15px, 1.6vw, 16px);
+        line-height: 1.5;
+        color: var(--ink-soft);
+      }
+
+      .resume {
+        display: flex;
+        align-items: center;
+        gap: 22px;
+        flex-wrap: wrap;
+      }
+
+      .resume-text {
+        flex: 1 1 260px;
+        min-width: 0;
+      }
+
+      .fork {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 18px;
+      }
+
+      .fork button {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 10px;
+        text-align: left;
+        font: inherit;
+        color: var(--ink);
+        padding: 22px 24px;
+        background: var(--raised-2);
+        border: 3px solid var(--edge);
+        border-radius: 12px;
+        cursor: pointer;
+      }
+
+      .fork button:hover {
+        border-color: #4a5b7d;
+      }
+
+      .fork .primary {
+        background: #12171f;
+        border-color: var(--accent);
+      }
+
+      .fork .primary:hover {
+        border-color: #ffd485;
+      }
+
+      .fork b {
+        font-size: clamp(18px, 2.1vw, 21px);
+        font-weight: 700;
+        line-height: 1.25;
+      }
+
+      .fork span {
+        font-size: clamp(15px, 1.6vw, 16px);
+        font-weight: 400;
+        line-height: 1.5;
+        color: var(--ink-soft);
+      }
+
+      .hint-touch {
+        display: none;
+      }
+
+      .undo {
+        display: inline-flex;
+        align-items: center;
+        gap: 9px;
+        padding: 8px 14px;
+        font-size: 15px;
+        color: var(--ink-soft);
+      }
+
+      .undo:disabled {
+        opacity: 0.45;
+        cursor: default;
+      }
+
+      .undo:disabled:hover {
+        background: var(--raised-2);
+        border-color: var(--edge);
+      }
+
+      /* --------------------------------------------------------- narrow --- */
+
+      @media (max-width: 700px) {
+        .ways-in,
+        .fork,
+        .onlyin {
+          grid-template-columns: minmax(0, 1fr);
+        }
+
+        /*
+          Everything that is not the decision gets out of the way. On a phone
+          the two cards plus the question is already most of the screen, and
+          chrome above them pushes the second card below the fold - which is
+          the one failure this layout cannot survive, since the whole point is
+          seeing both at once.
+        */
+        .topbar {
+          align-items: center;
+        }
+
+        .undo {
+          width: 44px;
+          height: 44px;
+          padding: 0;
+          justify-content: center;
+        }
+
+        .undo span,
+        .saved-note {
+          display: none;
+        }
+
+        .choice {
+          min-height: 150px;
+        }
+
+        .hint-keys {
+          display: none;
+        }
+
+        .hint-touch {
+          display: inline;
+        }
+
+        /* The two cards stack, and the arrow keycaps go with them - there is no
+           keyboard down here. The gesture does not change: drag the one you
+           mean. */
+        .versus {
+          flex-direction: column;
+        }
+
+        .versus-or {
+          flex-direction: row;
+          gap: 14px;
+        }
+
+        .versus-or::before,
+        .versus-or::after {
+          width: auto;
+          height: 2px;
+        }
+
+        .choice-key {
+          display: none;
+        }
+
+        .results-columns {
+          flex-direction: column;
+        }
+
+        .whatnow {
+          flex: 1 1 auto;
+          width: 100%;
+          position: static;
+        }
+
+        .diff-row {
+          flex-wrap: wrap;
+          gap: 10px 20px;
+        }
+
+        .track {
+          flex: 1 1 100%;
+          order: 3;
+          padding: 0 16px;
+        }
+
+        .gap {
+          flex: 0 0 auto;
+          text-align: left;
+        }
+
+        .gap b,
+        .gap span {
+          display: inline;
+          font-size: 14px;
+        }
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        .choice,
+        .choice-stamp,
+        .fold svg {
+          transition: none;
+        }
+      }
+    </style>
+  </head>
+
+  <body>
+    <!-- ================================================================ start -->
+    <main id="screen-start" class="wrap stack">
+      <div>
+        <p class="eyebrow">PromptLands · a thing you could build</p>
+        <h1 tabindex="-1" style="margin-top: 10px">Backlog Swipe</h1>
+      </div>
+
+      <p class="lede">
+        Rank a backlog by answering one question at a time —
+        <em style="color: var(--ink); font-style: normal; font-weight: 600"
+          >does this matter more than that?</em
+        >
+        Then send your ranking to one other person and see only the items the two of you
+        disagreed about.
+      </p>
+
+      <!-- Only when there is something to come back to. -->
+      <div id="resume" class="card-panel card-gold resume" hidden>
+        <div class="resume-text">
+          <p style="font-size: clamp(18px, 2.1vw, 21px); font-weight: 700; line-height: 1.3">
+            You were part way through — <span id="resume-count"></span>.
+          </p>
+          <p class="muted" style="font-size: clamp(15px, 1.6vw, 16px)">
+            Your order so far is exactly where you left it.
+          </p>
+        </div>
+        <div class="row">
+          <button id="resume-yes" class="button button-strong" type="button">Carry on</button>
+          <button id="resume-no" class="button" type="button">Start again</button>
+        </div>
+      </div>
+
+      <!-- Anybody who has to prepare a CSV before they see anything will close
+           the tab, so the way in that costs nothing is the gold one. -->
+      <div class="card-panel card-gold" style="display: flex; align-items: center; gap: 28px; flex-wrap: wrap">
+        <div style="flex: 1 1 300px; min-width: 0">
+          <h2>Try it without a file</h2>
+          <p class="muted" style="margin-top: 8px">
+            Twenty-four invented backlog items. About three minutes. Nothing to prepare.
+          </p>
+        </div>
+        <button id="try-sample" class="button button-strong button-big" type="button">
+          Start swiping
+        </button>
+      </div>
+
+      <div class="ways-in">
+        <div class="card-panel way">
+          <h3>Load your own CSV</h3>
+          <p class="muted" style="font-size: clamp(15px, 1.6vw, 17px)">
+            Two columns with a header row: <code>id</code> and <code>title</code>. Extra columns
+            are ignored. Straight out of a spreadsheet is fine.
+          </p>
+          <input id="csv-input" class="file-input" type="file" accept=".csv,text/csv,text/plain" />
+          <label class="button button-label" for="csv-input">Choose a CSV file</label>
+        </div>
+
+        <div class="card-panel way">
+          <h3>Open a file somebody sent you</h3>
+          <p class="muted" style="font-size: clamp(15px, 1.6vw, 17px)">
+            A Backlog Swipe export. You can rank those same items yourself, or compare it against
+            a second one.
+          </p>
+          <input id="json-input" class="file-input" type="file" accept=".json,application/json" />
+          <label class="button button-label" for="json-input">Choose a .json file</label>
+        </div>
+      </div>
+
+      <div id="start-error" hidden></div>
+
+      <!-- Nobody is narrating this. It carries its own instructions. -->
+      <div style="margin-top: 24px; padding-top: 30px; border-top: 2px solid var(--hair)">
+        <h2 style="color: var(--accent); margin-bottom: 22px">How it works</h2>
+        <ol class="steps">
+          <li>
+            <p>
+              <strong>Rank yours.</strong>
+              <span class="muted"
+                >One comparison at a time. Around four or five per item, so thirty items takes
+                about four minutes.</span
+              >
+            </p>
+          </li>
+          <li>
+            <p>
+              <strong>Send it to one other person.</strong>
+              <span class="muted"
+                >You get a file at the end. They open this page, load it, and rank the same items
+                themselves. Two people is enough.</span
+              >
+            </p>
+          </li>
+          <li>
+            <p>
+              <strong>Load both files.</strong>
+              <span class="muted"
+                >You get only the items you ranked differently, biggest gap first. Not a combined
+                list — the gaps are the point.</span
+              >
+            </p>
+          </li>
+        </ol>
+      </div>
+
+      <p class="faint" style="margin-top: 10px">
+        Everything happens inside this page. Nothing is uploaded, nothing is stored anywhere but
+        your own browser, and there is no account. Part of
+        <a href="../../">PromptLands</a>.
+      </p>
+    </main>
+
+    <!-- ================================================================= fork -->
+    <main id="screen-fork" class="wrap stack" hidden>
+      <div>
+        <p class="eyebrow">Somebody sent you a file</p>
+        <h1 tabindex="-1" id="fork-title" style="margin-top: 10px"></h1>
+      </div>
+      <p class="lede">What would you like to do with them?</p>
+
+      <div class="fork">
+        <button id="fork-rank" class="primary" type="button">
+          <b id="fork-rank-label"></b>
+          <span
+            >You will see the same items shuffled into your own order, not theirs — otherwise
+            their ranking would lead yours.</span
+          >
+        </button>
+        <button id="fork-compare" type="button">
+          <b>Compare it with another file</b>
+          <span>Load a second export and see only the items the two people ranked differently.</span>
+        </button>
+      </div>
+
+      <div id="fork-error" hidden></div>
+
+      <div class="row">
+        <button class="button" type="button" data-goto="start">Back</button>
+      </div>
+    </main>
+
+    <!-- ================================================================ swipe -->
+    <main id="screen-swipe" class="wrap stack" hidden>
+      <div class="topbar">
+        <div style="flex: 1 1 260px; min-width: 0">
+          <p class="placed-count">
+            Item <b id="placed-n">0</b> of <span id="placed-total">0</span>
+            <span class="muted" style="font-weight: 600">placed</span>
+          </p>
+          <div id="segments" class="segments" aria-hidden="true"></div>
+        </div>
+
+        <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 9px">
+          <button id="undo" class="button undo" type="button" aria-label="Undo that answer">
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M3 9h11a5 5 0 0 1 0 10h-3"></path>
+              <path d="M7 5L3 9l4 4"></path>
+            </svg>
+            <span>Undo that answer</span>
+          </button>
+          <p class="faint saved-note" style="margin: 0">
+            Saved as you go — you can close this and come back.
+          </p>
+        </div>
+      </div>
+
+      <h2 class="question" tabindex="-1" style="margin-top: 22px">Which of these matters more?</h2>
+
+      <p class="dots" style="margin-top: -8px">
+        Narrowing this one down
+        <i id="dots" aria-hidden="true"></i>
+      </p>
+
+      <div id="versus" class="versus">
+        <button class="choice choice-left" type="button" data-side="left">
+          <span class="choice-stamp">This one</span>
+          <span class="choice-key" aria-hidden="true">&larr;</span>
+          <span class="choice-id"></span>
+          <span class="choice-title"></span>
+        </button>
+
+        <div class="versus-or" aria-hidden="true">or</div>
+
+        <button class="choice choice-right" type="button" data-side="right">
+          <span class="choice-stamp">This one</span>
+          <span class="choice-key" aria-hidden="true">&rarr;</span>
+          <span class="choice-id"></span>
+          <span class="choice-title"></span>
+        </button>
+      </div>
+
+      <p class="faint" style="text-align: center">
+        <span class="hint-keys">Arrow keys, click a card, or drag the one you mean.</span>
+        <span class="hint-touch">Tap one, or drag the card you mean.</span>
+        <span class="muted">There is no wrong answer and nothing to lose.</span>
+      </p>
+
+      <div class="row" style="justify-content: center">
+        <button class="button" type="button" data-goto="start">Stop and come back later</button>
+      </div>
+    </main>
+
+    <!-- ============================================================== results -->
+    <main id="screen-results" class="wrap stack" hidden>
+      <div>
+        <p class="eyebrow" id="results-stat" style="color: var(--good)"></p>
+        <h1 tabindex="-1" style="margin-top: 10px">Your order</h1>
+      </div>
+      <p class="lede">
+        Most important first. Read it before you send it — this is usually where somebody notices
+        they ranked something lower than they would have said out loud.
+      </p>
+
+      <div class="results-columns">
+        <ol id="ranked" class="ranked"></ol>
+
+        <div class="whatnow">
+          <div>
+            <h2 style="font-size: clamp(20px, 2.3vw, 24px)">Now send it to one person</h2>
+            <p class="muted" style="margin-top: 8px; font-size: 16px">
+              They rank the same items, send theirs back, and you load both files. Two people is
+              enough.
+            </p>
+          </div>
+
+          <div class="field">
+            <label for="who">Your name</label>
+            <input id="who" type="text" autocomplete="name" placeholder="Alex" maxlength="40" />
+            <p class="faint" style="margin: 0">
+              Goes in the file and on the comparison screen, so two of these tell apart.
+            </p>
+          </div>
+
+          <button id="export" class="button button-strong button-wide button-big" type="button">
+            Export my ranking
+          </button>
+
+          <div class="sendthis">
+            <p class="faint" style="margin-bottom: 10px; letter-spacing: 0.06em; text-transform: uppercase">
+              Send them this
+            </p>
+            <p id="send-message"></p>
+            <button id="copy-message" class="button" type="button" style="margin-top: 12px; font-size: 15px; padding: 9px 14px">
+              Copy this message
+            </button>
+          </div>
+
+          <div class="divide">
+            <p class="muted" style="margin-bottom: 12px; font-size: 16px" id="already-label">
+              Already have theirs?
+            </p>
+            <input id="second-input" class="file-input" type="file" accept=".json,application/json" />
+            <label id="second-label" class="button button-wide button-label" for="second-input" style="text-align: center"
+              >Load their file and compare</label
+            >
+            <button id="compare-loaded" class="button button-wide" type="button" hidden style="margin-top: 10px"></button>
+          </div>
+
+          <div style="display: flex; flex-direction: column; gap: 8px; font-size: 15px">
+            <a href="#" data-restart="same">Rank these items again</a>
+            <a href="#" data-restart="new">Start with a different list</a>
+          </div>
+        </div>
+      </div>
+
+      <div id="results-error" hidden style="margin-top: 20px"></div>
+
+      <!-- The export is an interface between two copies of this page, so the
+           shape is fixed, versioned, and written down rather than left to be
+           reverse-engineered out of a download. -->
+      <div class="format">
+        <h2 style="color: var(--accent)">What is in the file</h2>
+        <p class="muted" style="margin-top: 8px; max-width: 70ch; font-size: 16px">
+          Plain JSON, and this shape will not change without the version number changing with it.
+          Items are in ranked order, most important first.
+        </p>
+        <pre id="format-sample"></pre>
+      </div>
+    </main>
+
+    <!-- ============================================================== compare -->
+    <main id="screen-compare" class="wrap stack" hidden>
+      <div>
+        <p class="eyebrow" id="compare-eyebrow"></p>
+        <h1 tabindex="-1" style="margin-top: 10px">Where you disagree</h1>
+      </div>
+      <p class="lede" id="compare-lede"></p>
+
+      <div class="diff">
+        <div class="diff-head">
+          <span>Item</span>
+          <div style="display: flex; align-items: center; gap: 20px">
+            <span class="who who-a"><i></i><b id="who-a"></b></span>
+            <span class="who who-b"><i></i><b id="who-b"></b></span>
+            <span>Gap</span>
+          </div>
+        </div>
+        <div id="diff-rows"></div>
+        <button id="fold" class="fold" type="button" aria-expanded="false" hidden>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M6 9l6 6 6-6"></path>
+          </svg>
+          <span id="fold-label"></span>
+        </button>
+        <div id="folded" hidden></div>
+      </div>
+
+      <div id="onlyin" class="card-panel" style="background: var(--deep); border-width: 2px" hidden>
+        <h2 style="font-size: clamp(18px, 2vw, 20px)">In one list only</h2>
+        <p class="muted" style="margin-top: 8px; font-size: 16px">
+          Not disagreements — you were working from different lists. Nothing is scored here.
+        </p>
+        <div class="onlyin" style="margin-top: 16px">
+          <div id="only-a" hidden>
+            <h3 style="color: var(--accent)"></h3>
+            <ul></ul>
+          </div>
+          <div id="only-b" hidden>
+            <h3 style="color: var(--focus)"></h3>
+            <ul></ul>
+          </div>
+        </div>
+      </div>
+
+      <p class="faint" style="max-width: 70ch; line-height: 1.6">
+        There is no combined ranking on this screen and there is not going to be one. Averaging the
+        two would produce an order neither of you believes, and bury the rows above — which are the
+        only part worth a meeting.
+      </p>
+
+      <div class="row">
+        <button id="back-to-mine" class="button" type="button" hidden>Back to my order</button>
+        <button class="button" type="button" data-goto="start">Start again</button>
+      </div>
+    </main>
+
+    <noscript>
+      <div class="wrap">
+        <h1>Backlog Swipe needs JavaScript</h1>
+        <p class="lede" style="margin-top: 12px">
+          It runs entirely in your browser — there is no server to fall back to.
+        </p>
+      </div>
+    </noscript>
+
+    <script type="module">
+      /*
+        THE WIRING, AND ONLY THE WIRING.
+
+        Everything that decides anything is in rank.js so that node --test can
+        check it without a browser. What is left in here draws things, listens
+        for clicks, keys and drags, and talks to localStorage. If you find
+        yourself writing a rule in this file - which item wins, where it goes,
+        what a file meant - it belongs next door.
+
+        The import is relative because this is served from a subpath.
+      */
+      import {
+        SAMPLE_BACKLOG,
+        SMALL_GAP,
+        STORAGE_KEY,
+        answer,
+        buildExport,
+        canUndo,
+        compareRankings,
+        createSession,
+        exportFilename,
+        isComplete,
+        nextComparison,
+        parseCsv,
+        parseExport,
+        progress,
+        rankedItems,
+        restoreSession,
+        undo,
+      } from "./rank.js";
+
+      const $ = (id) => document.getElementById(id);
+      const SCREENS = ["start", "fork", "swipe", "results", "compare"];
+
+      /** Everything the page is holding at once. */
+      const app = {
+        session: null,
+        /** A loaded export waiting on the fork question. */
+        pending: null,
+        /** Whoever's ranking we are comparing against, if we have one. */
+        theirs: null,
+        /** Ours, once the swiping is finished. */
+        mine: null,
+      };
+
+      /* ------------------------------------------------------------ storage */
+
+      // Same rule as the game's progress store: nothing in here throws because
+      // of storage. A profile that has banned it just means no resuming.
+      const store = {
+        read() {
+          try {
+            return window.localStorage.getItem(STORAGE_KEY);
+          } catch {
+            return null;
+          }
+        },
+        write(value) {
+          try {
+            window.localStorage.setItem(STORAGE_KEY, value);
+          } catch {
+            /* Full, or refused. The session carries on in memory. */
+          }
+        },
+        clear() {
+          try {
+            window.localStorage.removeItem(STORAGE_KEY);
+          } catch {
+            /* Nothing to do and nothing worth saying. */
+          }
+        },
+      };
+
+      function save() {
+        if (app.session) store.write(JSON.stringify(app.session));
+      }
+
+      /* ------------------------------------------------------------ screens */
+
+      function show(name) {
+        for (const screen of SCREENS) $(`screen-${screen}`).hidden = screen !== name;
+        // Give focus somewhere sensible, or a keyboard reader is left on a
+        // button that no longer exists.
+        const heading = $(`screen-${name}`).querySelector("[tabindex='-1']");
+        if (heading) heading.focus({ preventScroll: true });
+        window.scrollTo(0, 0);
+      }
+
+      const WARN_ICON =
+        '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#ffc861" ' +
+        'stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
+        '<circle cx="12" cy="12" r="9"></circle><path d="M12 7.5v5.5"></path>' +
+        '<path d="M12 16.5h.01"></path></svg>';
+
+      /** Amber, never red, and always with something to do about it. */
+      function complain(target, heading, message) {
+        target.innerHTML = "";
+        const notice = document.createElement("div");
+        notice.className = "notice";
+        notice.setAttribute("role", "alert");
+        notice.innerHTML = WARN_ICON;
+        const text = document.createElement("div");
+        const strong = document.createElement("b");
+        strong.textContent = heading;
+        const para = document.createElement("p");
+        para.textContent = message;
+        text.append(strong, para);
+        notice.append(text);
+        target.append(notice);
+        target.hidden = false;
+      }
+
+      function clearComplaint(target) {
+        target.innerHTML = "";
+        target.hidden = true;
+      }
+
+      /* -------------------------------------------------------------- start */
+
+      function startSession(items, who) {
+        app.session = createSession(items, { who: who || "" });
+        app.mine = null;
+        save();
+        renderSwipe();
+        show("swipe");
+      }
+
+      function offerResume() {
+        const saved = restoreSession(store.read());
+        if (!saved) {
+          $("resume").hidden = true;
+          return;
+        }
+        const p = progress(saved);
+        $("resume-count").textContent = isComplete(saved)
+          ? `you finished a ranking of ${p.total} items`
+          : `${p.placed} of ${p.total} placed`;
+        $("resume-yes").textContent = isComplete(saved) ? "See my order" : "Carry on";
+        $("resume").hidden = false;
+      }
+
+      $("resume-yes").addEventListener("click", () => {
+        const saved = restoreSession(store.read());
+        if (!saved) return offerResume();
+        app.session = saved;
+        if (isComplete(saved)) {
+          finish();
+        } else {
+          renderSwipe();
+          show("swipe");
+        }
+      });
+
+      $("resume-no").addEventListener("click", () => {
+        store.clear();
+        app.session = null;
+        offerResume();
+      });
+
+      $("try-sample").addEventListener("click", () => {
+        clearComplaint($("start-error"));
+        startSession(SAMPLE_BACKLOG);
+      });
+
+      /** FileReader rather than fetch: this page makes no network requests. */
+      function readFile(input, onText) {
+        const file = input.files && input.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = () => onText(String(reader.result || ""), file.name);
+        reader.onerror = () =>
+          complain(
+            $("start-error"),
+            "That file could not be read.",
+            "The browser refused to open it. If it is on a network drive, try copying it to " +
+              "your desktop first."
+          );
+        reader.readAsText(file);
+        // So that picking the same file twice in a row still fires a change.
+        input.value = "";
+      }
+
+      $("csv-input").addEventListener("change", (event) => {
+        clearComplaint($("start-error"));
+        readFile(event.target, (text) => {
+          const result = parseCsv(text);
+          if (!result.ok) {
+            complain($("start-error"), "That CSV could not be used.", result.message);
+            return;
+          }
+          startSession(result.items);
+        });
+      });
+
+      $("json-input").addEventListener("change", (event) => {
+        clearComplaint($("start-error"));
+        readFile(event.target, (text) => {
+          const result = parseExport(text);
+          if (!result.ok) {
+            complain($("start-error"), "That file could not be used.", result.message);
+            return;
+          }
+          app.pending = result;
+          openFork(result);
+        });
+      });
+
+      /* --------------------------------------------------------------- fork */
+
+      // A loaded export can do two jobs and the page has no way of guessing
+      // which, so it asks rather than picking.
+      function openFork(loaded) {
+        const who = loaded.who || "Somebody";
+        $("fork-title").textContent = `${who} ranked ${loaded.items.length} items.`;
+        $("fork-rank-label").textContent = `Rank these ${loaded.items.length} items myself`;
+        clearComplaint($("fork-error"));
+        show("fork");
+      }
+
+      $("fork-rank").addEventListener("click", () => {
+        if (!app.pending) return show("start");
+        // createSession shuffles, which matters more here than anywhere: the
+        // file arrives in the sender's ranked order, and handing it over in
+        // that order would hand over their answer with it.
+        app.theirs = app.pending;
+        startSession(app.pending.items);
+      });
+
+      $("fork-compare").addEventListener("click", () => {
+        if (!app.pending) return show("start");
+        app.theirs = app.pending;
+        app.mine = null;
+        // We have one side; ask for the other.
+        $("second-input").click();
+      });
+
+      /* -------------------------------------------------------------- swipe */
+
+      const versus = $("versus");
+      const cards = {
+        left: versus.querySelector(".choice-left"),
+        right: versus.querySelector(".choice-right"),
+      };
+      let shown = null;
+
+      function renderSwipe() {
+        const state = app.session;
+        if (!state) return show("start");
+        if (isComplete(state)) return finish();
+
+        const question = nextComparison(state);
+        const p = progress(state);
+        shown = question;
+
+        $("placed-n").textContent = String(p.placed);
+        $("placed-total").textContent = String(p.total);
+
+        // Built once per session, then only the classes change.
+        const segments = $("segments");
+        if (segments.childElementCount !== p.total) {
+          segments.innerHTML = "";
+          for (let i = 0; i < p.total; i += 1) segments.append(document.createElement("span"));
+        }
+        [...segments.children].forEach((seg, i) => {
+          seg.className = i < p.placed ? "is-placed" : i === p.placed ? "is-live" : "";
+        });
+
+        // How close THIS item is to being placed. The number of steps genuinely
+        // varies - two for the third item, five for the twentieth - so it is
+        // rebuilt rather than assumed.
+        const dots = $("dots");
+        dots.innerHTML = "";
+        for (let i = 0; i < p.itemSteps; i += 1) {
+          const dot = document.createElement("span");
+          if (i < p.itemStep) dot.className = "is-done";
+          dots.append(dot);
+        }
+
+        for (const side of ["left", "right"]) {
+          const card = cards[side];
+          card.querySelector(".choice-id").textContent = question[side].id;
+          card.querySelector(".choice-title").textContent = question[side].title;
+          card.style.transform = "";
+          card.classList.remove("is-picking", "is-dimmed", "is-dragging");
+        }
+
+        $("undo").disabled = !canUndo(state);
+      }
+
+      function choose(side) {
+        if (!shown || !app.session) return;
+        app.session = answer(app.session, shown[side].id);
+        save();
+        if (isComplete(app.session)) finish();
+        else renderSwipe();
+      }
+
+      for (const side of ["left", "right"]) {
+        cards[side].addEventListener("click", () => {
+          if (suppressClick) return;
+          choose(side);
+        });
+      }
+
+      $("undo").addEventListener("click", () => {
+        if (!app.session || !canUndo(app.session)) return;
+        app.session = undo(app.session);
+        save();
+        renderSwipe();
+      });
+
+      document.addEventListener("keydown", (event) => {
+        if ($("screen-swipe").hidden) return;
+        if (event.metaKey || event.ctrlKey || event.altKey) return;
+        const key = event.key;
+        // Up and down as well as left and right, because below 700px the two
+        // cards are stacked and left/right stops describing what is on screen.
+        if (key === "ArrowLeft" || key === "ArrowUp") {
+          event.preventDefault();
+          choose("left");
+        } else if (key === "ArrowRight" || key === "ArrowDown") {
+          event.preventDefault();
+          choose("right");
+        } else if (key === "Backspace") {
+          event.preventDefault();
+          $("undo").click();
+        }
+      });
+
+      /* ---------------------------------------------------------- the drag */
+
+      /*
+        You drag the card you MEAN, in whichever direction you like: the card
+        you grabbed is the answer. That removes the need to invent a "no"
+        gesture, and it works the same with a thumb or a mouse.
+      */
+      const DRAG_COMMITS = 60;
+      const DRAG_SHOWS = 24;
+      const DRAG_IS_NOT_A_CLICK = 8;
+      let suppressClick = false;
+
+      for (const side of ["left", "right"]) {
+        const card = cards[side];
+        const other = cards[side === "left" ? "right" : "left"];
+        let originX = 0;
+        let originY = 0;
+        let dragging = false;
+
+        card.addEventListener("pointerdown", (event) => {
+          if (event.button !== 0) return;
+          dragging = true;
+          suppressClick = false;
+          originX = event.clientX;
+          originY = event.clientY;
+          card.setPointerCapture(event.pointerId);
+          card.classList.add("is-dragging");
+        });
+
+        card.addEventListener("pointermove", (event) => {
+          if (!dragging) return;
+          const dx = event.clientX - originX;
+          const dy = event.clientY - originY;
+          card.style.transform = `translate(${dx}px, ${dy * 0.25}px) rotate(${dx * 0.04}deg)`;
+          const committed = Math.abs(dx) > DRAG_SHOWS;
+          card.classList.toggle("is-picking", committed);
+          other.classList.toggle("is-dimmed", committed);
+        });
+
+        const end = (event) => {
+          if (!dragging) return;
+          dragging = false;
+          card.classList.remove("is-dragging");
+          const moved = Math.abs(event.clientX - originX);
+
+          if (moved >= DRAG_COMMITS) {
+            suppressClick = true;
+            choose(side);
+            return;
+          }
+
+          // Not far enough to mean anything. Put it back.
+          card.style.transform = "";
+          card.classList.remove("is-picking");
+          other.classList.remove("is-dimmed");
+          // A short drag is somebody who changed their mind, not a click.
+          suppressClick = moved > DRAG_IS_NOT_A_CLICK;
+        };
+
+        card.addEventListener("pointerup", end);
+        card.addEventListener("pointercancel", end);
+      }
+
+      /* ------------------------------------------------------------ results */
+
+      function finish() {
+        const state = app.session;
+        const items = rankedItems(state);
+        app.mine = { who: $("who").value.trim(), items };
+
+        const p = progress(state);
+        $("results-stat").textContent =
+          `${p.total} items placed in ${p.comparisons} comparison${p.comparisons === 1 ? "" : "s"}`;
+
+        const list = $("ranked");
+        list.innerHTML = "";
+        items.forEach((item, index) => {
+          const li = document.createElement("li");
+          const rank = document.createElement("span");
+          rank.className = "rank";
+          rank.textContent = String(index + 1);
+          const title = document.createElement("span");
+          title.className = "title";
+          title.textContent = item.title;
+          const id = document.createElement("span");
+          id.className = "id";
+          id.textContent = item.id;
+          li.append(rank, title, id);
+          list.append(li);
+        });
+
+        if (state.who && !$("who").value) $("who").value = state.who;
+        renderSendMessage();
+        renderFormatSample();
+
+        // If we got here by ranking somebody's file, we already have their side
+        // and there is no second file to go and find.
+        const straightToCompare = $("compare-loaded");
+        if (app.theirs) {
+          straightToCompare.hidden = false;
+          straightToCompare.textContent = `Compare with ${app.theirs.who || "their"} ranking`;
+          $("already-label").textContent = "Compare with theirs, or load a different file:";
+        } else {
+          straightToCompare.hidden = true;
+          $("already-label").textContent = "Already have theirs?";
+        }
+
+        clearComplaint($("results-error"));
+        show("results");
+      }
+
+      function renderSendMessage() {
+        const here = window.location.origin + window.location.pathname;
+        $("send-message").textContent =
+          `I have ranked our backlog with Backlog Swipe. Open ${here}, load the file I have ` +
+          `attached and choose "rank these items myself". Send yours back and either of us can ` +
+          `load both files to see only the items we disagreed about. It takes about four minutes.`;
+      }
+
+      function renderFormatSample() {
+        const sample = buildExport(app.session, $("who").value || "Alex");
+        // Two rows is enough to show the shape without printing the whole list.
+        $("format-sample").textContent = JSON.stringify(
+          { ...sample, items: sample.items.slice(0, 2) },
+          null,
+          2
+        );
+      }
+
+      $("who").addEventListener("input", () => {
+        if (app.mine) app.mine.who = $("who").value.trim();
+        renderFormatSample();
+      });
+
+      $("export").addEventListener("click", () => {
+        if (!app.session) return;
+        const who = $("who").value.trim();
+        const payload = buildExport(app.session, who);
+        // A Blob and an object URL. Local to the browser; nothing is uploaded.
+        const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.href = url;
+        link.download = exportFilename(who);
+        document.body.append(link);
+        link.click();
+        link.remove();
+        URL.revokeObjectURL(url);
+      });
+
+      $("copy-message").addEventListener("click", async () => {
+        const button = $("copy-message");
+        const text = $("send-message").textContent;
+        let copied = false;
+        try {
+          await navigator.clipboard.writeText(text);
+          copied = true;
+        } catch {
+          // Older Edge, or a browser that will not do this without a gesture it
+          // recognises. Fall back to selecting it so a manual copy works.
+          const range = document.createRange();
+          range.selectNodeContents($("send-message"));
+          const selection = window.getSelection();
+          selection.removeAllRanges();
+          selection.addRange(range);
+        }
+        button.textContent = copied ? "Copied" : "Select it and press Ctrl+C";
+        window.setTimeout(() => {
+          button.textContent = "Copy this message";
+        }, 2400);
+      });
+
+      $("compare-loaded").addEventListener("click", () => {
+        if (app.theirs && app.mine) openCompare(app.mine, app.theirs);
+      });
+
+      $("second-input").addEventListener("change", (event) => {
+        const errorTarget = $("screen-results").hidden ? $("fork-error") : $("results-error");
+        clearComplaint(errorTarget);
+        readFile(event.target, (text) => {
+          const result = parseExport(text);
+          if (!result.ok) {
+            complain(errorTarget, "That file could not be used.", result.message);
+            return;
+          }
+          // Coming from the fork we have one ranking and just loaded the other.
+          // Coming from the results we have our own and just loaded theirs.
+          const a = app.mine || app.theirs;
+          if (!a) {
+            app.theirs = result;
+            complain(
+              errorTarget,
+              "One more file needed.",
+              "That is one person's ranking. Load a second one to compare them."
+            );
+            return;
+          }
+          openCompare(a, result);
+        });
+      });
+
+      for (const link of document.querySelectorAll("[data-restart]")) {
+        link.addEventListener("click", (event) => {
+          event.preventDefault();
+          if (link.dataset.restart === "same" && app.session) {
+            startSession(app.session.items, $("who").value.trim());
+          } else {
+            store.clear();
+            app.session = null;
+            app.mine = null;
+            app.theirs = null;
+            offerResume();
+            show("start");
+          }
+        });
+      }
+
+      /* -------------------------------------------------------- disagreement */
+
+      function openCompare(a, b) {
+        const result = compareRankings(a, b);
+        const errorTarget = $("screen-results").hidden ? $("fork-error") : $("results-error");
+        if (!result.ok) {
+          complain(errorTarget, "Those two files cannot be compared.", result.message);
+          return;
+        }
+        renderCompare(result);
+        show("compare");
+      }
+
+      function marker(className, position, span) {
+        const el = document.createElement("span");
+        el.className = `marker ${className}`;
+        el.style.left = `${((position - 1) / Math.max(1, span - 1)) * 100}%`;
+        el.textContent = String(position);
+        return el;
+      }
+
+      function diffRow(row, span) {
+        const el = document.createElement("div");
+        el.className = "diff-row";
+
+        const title = document.createElement("p");
+        title.className = "diff-title";
+        title.textContent = row.title;
+
+        const track = document.createElement("div");
+        track.className = "track";
+        const inner = document.createElement("div");
+        inner.className = "track-inner";
+
+        const rail = document.createElement("div");
+        rail.className = "track-rail";
+
+        const aPct = ((row.aRank - 1) / Math.max(1, span - 1)) * 100;
+        const bPct = ((row.bRank - 1) / Math.max(1, span - 1)) * 100;
+        const bar = document.createElement("div");
+        bar.className = "track-bar";
+        bar.style.left = `${Math.min(aPct, bPct)}%`;
+        bar.style.width = `${Math.abs(aPct - bPct)}%`;
+        bar.style.background =
+          row.aRank < row.bRank
+            ? "linear-gradient(90deg, #ffc861, #7fd2ff)"
+            : "linear-gradient(90deg, #7fd2ff, #ffc861)";
+
+        inner.append(rail, bar, marker("marker-a", row.aRank, span), marker("marker-b", row.bRank, span));
+        track.append(inner);
+
+        const gap = document.createElement("div");
+        gap.className = "gap";
+        const number = document.createElement("b");
+        number.textContent = String(row.gap);
+        const unit = document.createElement("span");
+        unit.textContent = row.gap === 1 ? "place" : "places";
+        gap.append(number, unit);
+
+        el.append(title, track, gap);
+        return el;
+      }
+
+      function renderCompare(result) {
+        const wide = result.disagreements.filter((row) => row.gap > SMALL_GAP);
+        const close = result.disagreements.filter((row) => row.gap <= SMALL_GAP);
+
+        $("compare-eyebrow").textContent =
+          `${result.whoA} and ${result.whoB} · ${result.sharedCount} items you both ranked`;
+        $("who-a").textContent = result.whoA;
+        $("who-b").textContent = result.whoB;
+
+        $("compare-lede").textContent = wide.length
+          ? `${wide.length} item${wide.length === 1 ? "" : "s"} more than ${SMALL_GAP} places apart, ` +
+            `biggest gap first. Take the top three into your next refinement session and ask each ` +
+            `other why. Expect at least one to turn out to be a title nobody could judge rather ` +
+            `than a real difference of opinion.`
+          : `Nothing is more than ${SMALL_GAP} places apart. The two of you agree about this ` +
+            `backlog to within a rounding error, which is worth knowing on its own.`;
+
+        const rows = $("diff-rows");
+        rows.innerHTML = "";
+        for (const row of wide) rows.append(diffRow(row, result.span));
+
+        // The tail is folded, never dropped. Rank positions cascade: moving one
+        // item twenty places shifts twenty others by one, so a strict list of
+        // every non-zero gap is mostly the wake of a few real disagreements.
+        const folded = $("folded");
+        folded.innerHTML = "";
+        const quiet = close.length + result.agreedCount;
+        if (quiet > 0) {
+          $("fold").hidden = false;
+          $("fold-label").innerHTML =
+            `You placed <b>${quiet} other item${quiet === 1 ? "" : "s"}</b> within ${SMALL_GAP} ` +
+            `places of each other. Close enough that one item moving elsewhere in the list would ` +
+            `explain it — but they are here if you want them.`;
+          for (const row of close) folded.append(diffRow(row, result.span));
+          if (result.agreedCount > 0) {
+            const note = document.createElement("p");
+            note.className = "faint";
+            note.style.padding = "14px 20px";
+            note.textContent =
+              `And ${result.agreedCount} item${result.agreedCount === 1 ? "" : "s"} you both put ` +
+              `in exactly the same place.`;
+            folded.append(note);
+          }
+        } else {
+          $("fold").hidden = true;
+        }
+        folded.hidden = true;
+        $("fold").setAttribute("aria-expanded", "false");
+
+        renderOnlyIn(result);
+        $("back-to-mine").hidden = !app.mine;
+      }
+
+      function renderOnlyIn(result) {
+        const sides = [
+          { box: $("only-a"), who: result.whoA, items: result.onlyInA },
+          { box: $("only-b"), who: result.whoB, items: result.onlyInB },
+        ];
+        let any = false;
+        for (const side of sides) {
+          side.box.hidden = side.items.length === 0;
+          if (side.items.length === 0) continue;
+          any = true;
+          side.box.querySelector("h3").textContent = `Only ${side.who} ranked`;
+          const list = side.box.querySelector("ul");
+          list.innerHTML = "";
+          for (const item of side.items) {
+            const li = document.createElement("li");
+            li.textContent = item.title;
+            list.append(li);
+          }
+        }
+        $("onlyin").hidden = !any;
+      }
+
+      $("fold").addEventListener("click", () => {
+        const open = $("fold").getAttribute("aria-expanded") === "true";
+        $("fold").setAttribute("aria-expanded", open ? "false" : "true");
+        $("folded").hidden = open;
+      });
+
+      $("back-to-mine").addEventListener("click", () => {
+        if (app.session && isComplete(app.session)) finish();
+        else show("start");
+      });
+
+      /* --------------------------------------------------------------- boot */
+
+      for (const button of document.querySelectorAll("[data-goto]")) {
+        button.addEventListener("click", () => {
+          if (button.dataset.goto === "start") offerResume();
+          show(button.dataset.goto);
+        });
+      }
+
+      offerResume();
+      show("start");
+    </script>
+  </body>
+</html>

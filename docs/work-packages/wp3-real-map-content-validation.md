@@ -7,7 +7,7 @@ the HUD and saved progress are all built and merged, running on a 40x20 throwawa
 with Zone 1's three stations on it. 84 tests pass. If `src/ui/panel.js` is missing you have
 branched from the wrong place; stop and fix that first.
 
-**This is the package that makes Vibing content-complete.** After it, the game is the game.
+**This is the package that makes PromptLands content-complete.** After it, the game is the game.
 
 ---
 

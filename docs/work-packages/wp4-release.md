@@ -133,8 +133,8 @@ The checkout is disposable, so nothing is deleted from the repository.
 
 The final pass. It is the first thing anyone forking this reads.
 
-- What Vibing is, in three sentences
-- **The live URL**, once you know it: `https://bigeazee.github.io/vibing/`
+- What PromptLands is, in three sentences
+- **The live URL**, once you know it: `https://bigeazee.github.io/promptlands/`
 - How to play: arrow keys or WASD, `E` to open, `Esc` to close
 - How to run it locally, and the `file://` trap
 - The desktop-keyboard-only limitation, stated plainly

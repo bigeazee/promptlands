@@ -703,11 +703,11 @@ export const stations = [
     links: [
       {
         label: "How to add a station, and the backlog of ideas (CONTRIBUTING.md)",
-        href: "https://github.com/bigeazee/vibing/blob/main/CONTRIBUTING.md",
+        href: "https://github.com/bigeazee/promptlands/blob/main/CONTRIBUTING.md",
       },
       {
         label: "The repository this game is built from",
-        href: "https://github.com/bigeazee/vibing",
+        href: "https://github.com/bigeazee/promptlands",
       },
     ],
   },

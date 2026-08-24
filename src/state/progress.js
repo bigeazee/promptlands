@@ -17,7 +17,7 @@
  * a fresh game, not an error screen in the middle of a talk.
  */
 
-export const STORAGE_KEY = "vibing.v1";
+export const STORAGE_KEY = "promptlands.v1";
 
 /**
  * @param {{getItem: Function, setItem: Function, removeItem: Function}|null} storage
@@ -167,7 +167,7 @@ export function createProgress(storage) {
       const zones = [...unlocked].sort((a, b) => a - b).join(", ");
 
       return [
-        "Vibing - progress",
+        "PromptLands - progress",
         `Stations: ${titles.length} of ${total} visited`,
         `Zones unlocked: ${zones}`,
         `Visited: ${titles.length ? titles.join(", ") : "nothing yet"}`,

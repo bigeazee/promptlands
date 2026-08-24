@@ -22,7 +22,7 @@ The two that will bite you fastest:
 - **No build step, no framework, no dependencies.** Native ES modules served directly. If you
   find yourself adding a `package.json` `dependencies` block, stop.
 - **All asset and module paths must be relative.** The site deploys to GitHub Pages under a
-  subpath (`/vibing/`). A leading `/` will work locally and 404 in production. This is the
+  subpath (`/promptlands/`). A leading `/` will work locally and 404 in production. This is the
   single most likely way for this package to fail.
 
 ---
@@ -305,7 +305,7 @@ camera scrolls and clamps on **both** axes.
   in **large, high-contrast text** — this is what a viewer sees when an asset 404s, and it must
   be readable, not a console message.
 - A touch/no-keyboard notice: if the device has no fine pointer
-  (`window.matchMedia("(pointer: coarse)")`), show a short, friendly message saying Vibing is
+  (`window.matchMedia("(pointer: coarse)")`), show a short, friendly message saying PromptLands is
   desktop-keyboard-only for now. Do not attempt touch controls.
 - `<script type="module" src="src/engine/game.js">` style entry, with relative paths
   throughout.
@@ -363,7 +363,7 @@ run `node --test tests/`. No install step, because there is nothing to install.
 
 Short and practical:
 
-- What Vibing is, in three sentences
+- What PromptLands is, in three sentences
 - How to run it locally: `python3 -m http.server 8000` then open `http://localhost:8000`.
   **Explain that opening `index.html` directly with `file://` will not work**, because ES
   modules are blocked by CORS on the file protocol. People will hit this.

@@ -174,7 +174,7 @@ try {
 
   // Exposed so pause(), resume() and destroy() can be tried from the browser
   // console. Nothing is sent anywhere; there is no tracking here.
-  window.vibing = game;
+  window.promptlands = game;
 } catch (error) {
   showError(error);
 }

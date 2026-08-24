@@ -18,7 +18,7 @@ does not repeat them and does not override them.
 The three that will bite you fastest:
 
 - **No build step, no framework, no dependencies.** Native ES modules served directly.
-- **All paths relative.** The site deploys to GitHub Pages under `/vibing/`. A leading `/`
+- **All paths relative.** The site deploys to GitHub Pages under `/promptlands/`. A leading `/`
   works locally and 404s in production.
 - **The content safety rule.** This package writes real station copy that will be published
   on the open internet. Section 6 restates it because it applies directly to your work.
@@ -100,7 +100,7 @@ Pure apart from the storage object handed to it. **No `localStorage` access from
 module** — it is injected, so the tests run in plain Node with a fake.
 
 ```js
-export const STORAGE_KEY = "vibing.v1";
+export const STORAGE_KEY = "promptlands.v1";
 
 /**
  * @param {object} storage anything with getItem/setItem/removeItem
@@ -415,7 +415,7 @@ working, say so plainly rather than leaving me to find it.
 - [ ] Progress survives a reload — visited stations and unlocked zones both
 - [ ] Reset clears progress and re-locks the gates without a page reload
 - [ ] Export produces a pasteable summary with nothing identifying in it
-- [ ] Corrupt `localStorage` — set `vibing.v1` to `"{{{"` by hand — starts a fresh game
+- [ ] Corrupt `localStorage` — set `promptlands.v1` to `"{{{"` by hand — starts a fresh game
       rather than showing an error. **Test this yourself before reporting done.**
 - [ ] Panel and quiz text are readable with the window at half a laptop screen
 - [ ] `grep -rnE '(src|href)="/|from "/' index.html src/` finds nothing

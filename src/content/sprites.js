@@ -2,7 +2,7 @@
  * THE SPRITE SHEET CONTRACT
  * =========================
  *
- * This file is the single source of truth for every sprite in Vibing.
+ * This file is the single source of truth for every sprite in PromptLands.
  *
  * Rules:
  *   1. Content and engine code refer to sprites BY NAME, never by atlas index.

@@ -1,12 +1,12 @@
-# Vibing
+# PromptLands
 
-Vibing is a small top-down browser game that doubles as a talk about
+PromptLands is a small top-down browser game that doubles as a talk about
 AI-assisted development. You walk a three-zone map and open the things you find,
 and each one describes something a product manager could realistically build
 themselves — with a receipt saying what it cost to build. It runs entirely in
 your browser: no server, no accounts, no tracking.
 
-**Play it: <https://bigeazee.github.io/vibing/>**
+**Play it: <https://bigeazee.github.io/promptlands/>**
 
 The three zones are the argument. Zone 1 is one conversation and one HTML file.
 Zone 2 holds state and moves data around. Zone 3 has a repository, tests and a
@@ -30,7 +30,7 @@ enough. Facing it just decides which one you get when there are two.
 
 ## Desktop and keyboard only
 
-Vibing needs a physical keyboard. There are no touch controls and none are
+PromptLands needs a physical keyboard. There are no touch controls and none are
 planned for this version — phone and tablet visitors get a short note saying so
 rather than a canvas they cannot play. It targets current Chrome, Edge and
 Firefox.
@@ -43,7 +43,7 @@ entrance. A wrong answer says so and lets you try again straight away. There is
 no score, no timer and no way to lose this game.
 
 Where you have been is saved in your own browser's local storage, under the key
-`vibing.v1`, and nowhere else. Nothing is sent anywhere and nothing is measured
+`promptlands.v1`, and nowhere else. Nothing is sent anywhere and nothing is measured
 — there is no server to send it to. Two buttons under the game:
 
 - **Reset progress** clears it and closes the gates again, after asking.
@@ -55,7 +55,7 @@ scratch rather than showing you an error.
 
 ## Run it locally
 
-Vibing uses native ES modules, which browsers refuse to load over the `file://`
+PromptLands uses native ES modules, which browsers refuse to load over the `file://`
 protocol. **Opening `index.html` by double-clicking it will not work** — you
 will get a blank page and a CORS error in the console. Serve the folder
 instead:

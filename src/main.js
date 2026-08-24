@@ -25,9 +25,10 @@ import { lockGates, markSolid } from "./engine/zones.js";
 import { TILE_SIZE } from "./content/sprites.js";
 import { gates } from "./content/gates.js";
 import { legend, mapDef } from "./content/map.js";
-import { plaques } from "./content/plaques.js";
+import { guideId, guides } from "./content/guides.js";
 import { FLAGSHIP_MARKER_SPRITE, stations } from "./content/stations.js";
 import { createProgress } from "./state/progress.js";
+import { createDialogue } from "./ui/dialogue.js";
 import { createGateQuiz } from "./ui/gate.js";
 import { createHud } from "./ui/hud.js";
 import { createPanel } from "./ui/panel.js";
@@ -118,7 +119,7 @@ for (const gate of gates) {
   entities.push(entity);
 }
 
-for (const item of [...stations, ...plaques]) {
+for (const item of [...stations, ...guides]) {
   entities.push({
     sprite: item.sprite,
     pxX: item.tile.x * TILE_SIZE,
@@ -142,10 +143,11 @@ for (const station of stations) {
 const hud = createHud(document.getElementById("hud"));
 const panel = createPanel(document.getElementById("panel-root"));
 const quiz = createGateQuiz(document.getElementById("quiz-root"));
+const dialogue = createDialogue(document.getElementById("dialogue-root"));
 
 /** Identity, not id: a station and a gate could legitimately share an id. */
 const gateSet = new Set(gates);
-const plaqueSet = new Set(plaques);
+const guideSet = new Set(guides);
 
 /** Stations plus any still-locked gate. Rebuilt by syncGates. */
 const interactables = [];
@@ -159,17 +161,18 @@ try {
 
   // After startGame, because both need the parsed grid it returns.
   markSolid(game.grid, stations, "station");
-  markSolid(game.grid, plaques, "plaque");
+  markSolid(game.grid, guides, "guide");
   syncGates();
 
   refreshProgress();
   hud.setZone(game.grid.zoneAt(game.player.tileX, game.player.tileY));
   wireControls();
 
-  // Both overlays report a close the same way: registered once, fires on every
-  // close for the life of the overlay.
+  // All three overlays report a close the same way: registered once, fires on
+  // every close for the life of the overlay.
   panel.onClose(onOverlayClosed);
   quiz.onClose(onOverlayClosed);
+  dialogue.onClose(onOverlayClosed);
   focusCanvas();
 
   // Exposed so pause(), resume() and destroy() can be tried from the browser
@@ -183,9 +186,22 @@ try {
 function tick() {
   if (!game) return;
 
-  // Both overlays report their own close through onClose, so nothing here has
-  // to watch for one.
-  if (quiz.isOpen() || panel.isOpen()) return;
+  // Every overlay reports its own close through onClose, so nothing here has to
+  // watch for one. But this frame still runs while paused, so an overlay that
+  // uses E itself - the dialogue advances on it - would otherwise have that
+  // same press consumed here and reopen itself underneath.
+  if (anyOverlayOpen()) return;
+
+  // The key that closed an overlay is still travelling. Overlay keydown
+  // handlers are registered before input.js's, so a dialogue that closes itself
+  // on E does so BEFORE input.js records that press - and onOverlayClosed
+  // therefore clears a flag that is set again a moment later. Swallowing one
+  // frame here is what stops the box reopening under its own closing keypress.
+  if (overlayJustClosed) {
+    game.input.clearPresses();
+    overlayJustClosed = false;
+    return;
+  }
 
   hud.setZone(game.grid.zoneAt(game.player.tileX, game.player.tileY));
 
@@ -200,21 +216,39 @@ function tick() {
   if (target && pressed) openFor(target);
 }
 
+/**
+ * Is anything covering the game right now?
+ *
+ * One list, so that adding a fourth overlay is one edit rather than a bug that
+ * only shows up when somebody presses a key the new overlay also wants.
+ */
+let overlayJustClosed = false;
+
+function anyOverlayOpen() {
+  return panel.isOpen() || quiz.isOpen() || dialogue.isOpen();
+}
+
 function promptFor(item) {
   if (gateSet.has(item)) return "Answer the question";
-  if (plaqueSet.has(item)) return `Read ${item.title}`;
+  if (guideSet.has(item)) return `Talk to ${item.name}`;
   return `Open ${item.title}`;
 }
 
 function openFor(item) {
   if (gateSet.has(item)) openGate(item);
-  else if (plaqueSet.has(item)) openPlaque(item);
+  else if (guideSet.has(item)) openGuide(item);
   else openStation(item);
 }
 
-/** A plaque is not a station: it opens, but it does not count as visited. */
-function openPlaque(plaque) {
-  panel.openPlaque(plaque);
+/**
+ * A guide is not a station: talking to one opens a conversation, but it does
+ * not count towards the visited-stations total. `seen` is read BEFORE the guide
+ * is marked, so the first conversation is the full one.
+ */
+function openGuide(guide) {
+  const id = guideId(guide);
+  dialogue.open(guide, { seen: progress.hasSpokenTo(id) });
+  progress.markSpokenTo(id);
   pauseForOverlay();
 }
 
@@ -250,6 +284,7 @@ function pauseForOverlay() {
 
 function onOverlayClosed() {
   game.input.clearPresses();
+  overlayJustClosed = true;
   game.resume();
   focusCanvas();
 }
@@ -263,7 +298,7 @@ function syncGates() {
 
   interactables.length = 0;
   for (const station of stations) interactables.push(station);
-  for (const plaque of plaques) interactables.push(plaque);
+  for (const guide of guides) interactables.push(guide);
 
   for (const gate of gates) {
     const unlocked = progress.isZoneUnlocked(gate.toZone);

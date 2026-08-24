@@ -38,7 +38,7 @@ const SCROLL_STEP = 72;
 
 /**
  * @param {HTMLElement} root an empty container element in index.html
- * @returns {{open: (station: object) => void, openPlaque: (plaque: object) => void,
+ * @returns {{open: (station: object) => void,
  *            close: () => void, isOpen: () => boolean,
  *            onClose: (handler: Function) => void}}
  */
@@ -134,34 +134,6 @@ export function createPanel(root) {
     title.textContent = station.title || station.id;
 
     body.replaceChildren(...content);
-    body.scrollTop = 0;
-
-    returnFocusTo = document.activeElement;
-    root.hidden = false;
-    open = true;
-    body.focus();
-  }
-
-  /**
-   * A plaque uses the panel's chrome and none of its structure.
-   *
-   * No four sections and NO RECEIPT: a zone plaque has no build time, no cost
-   * and no line count, and a receipt card carrying seven invented figures would
-   * cost more trust than the plaque is worth. See src/content/plaques.js.
-   *
-   * @param {object} plaque one object from src/content/plaques.js
-   */
-  function openPlaquePanel(plaque) {
-    if (!plaque) throw new Error("panel.openPlaque: needs a plaque object.");
-
-    const nodes = [];
-    if (plaque.level) nodes.push(el("p", "plaque-level", String(plaque.level)));
-    nodes.push(...paragraphs(plaque.body));
-
-    eyebrow.textContent = "The way this zone works";
-    title.textContent = plaque.title || `Zone ${plaque.zone}`;
-
-    body.replaceChildren(...nodes);
     body.scrollTop = 0;
 
     returnFocusTo = document.activeElement;
@@ -343,7 +315,6 @@ export function createPanel(root) {
 
   return {
     open: openPanel,
-    openPlaque: openPlaquePanel,
     close,
     isOpen() {
       return open;

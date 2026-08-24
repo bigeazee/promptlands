@@ -86,17 +86,17 @@ test("a station with no usable tile throws, naming the station id", () => {
   );
 });
 
-test("plaques go through unmodified: no id, and the zone is the name in the message", () => {
+test("guides go through unmodified: no id, and the zone is the name in the message", () => {
   const grid = fixture();
-  // The shape of a real plaque: a zone and a tile, and deliberately no id.
-  markSolid(grid, [{ zone: 1, tile: { x: 1, y: 1 } }], "plaque");
+  // The shape of a real guide: a zone and a tile, and deliberately no id.
+  markSolid(grid, [{ zone: 1, tile: { x: 1, y: 1 } }], "guide");
   assert.equal(solidAt(grid, 1, 1), true);
 
   assert.throws(
-    () => markSolid(grid, [{ zone: 3, tile: { x: 2, y: 0 } }], "plaque"),
+    () => markSolid(grid, [{ zone: 3, tile: { x: 2, y: 0 } }], "guide"),
     (error) => {
       assert.match(error.message, /zone 3/, "with no id, the message names the zone");
-      assert.match(error.message, /plaque/, "and calls it a plaque, not a station");
+      assert.match(error.message, /guide/, "and calls it a guide, not a station");
       assert.ok(!/station/.test(error.message), "naming the wrong kind sends you to the wrong file");
       return true;
     }

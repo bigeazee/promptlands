@@ -154,8 +154,9 @@ export const SPRITES = {
   rail: ["dungeon", 70],
 
   // ------------------------------------------------------------------ props
-  // Interactable station objects and scenery. `plaque` is the signpost used for
-  // the zone plaques that make gate answers discoverable in-zone.
+  // Interactable station objects and scenery. `plaque` is a signpost tile, kept
+  // named and available though nothing places one since the zone guides became
+  // characters you talk to rather than boards you read.
   plaque: ["town", 83],
   chest: ["town", 130],
   chest_open: ["town", 131],

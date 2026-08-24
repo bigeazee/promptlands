@@ -1,8 +1,8 @@
-# CLAUDE.md — Vibing
+# CLAUDE.md — PromptLands
 
 Read this file completely before writing any code in this repo.
 
-Vibing is a top-down, Zelda-style browser game that serves as the delivery vehicle for a
+PromptLands is a top-down, Zelda-style browser game that serves as the delivery vehicle for a
 45-minute talk about AI-assisted development, given to a non-technical audience of product
 managers over Microsoft Teams. Players walk a three-zone map and interact with objects that
 open "stations" — panels describing things a PM could build themselves.

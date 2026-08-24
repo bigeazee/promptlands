@@ -167,7 +167,7 @@ export const legend = {
 };
 
 export const mapDef = {
-  name: "Vibing",
+  name: "PromptLands",
   // On the lane in zone 1, a few tiles in from the west end.
   spawn: { x: 3, y: 10 },
   // Three inclusive tile-x ranges covering the whole map. Each barrier column

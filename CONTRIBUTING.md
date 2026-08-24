@@ -1,4 +1,4 @@
-# Contributing to Vibing
+# Contributing to PromptLands
 
 The whole point of this repository is that you can fork it, add a station
 describing something you would build, and open a pull request — without knowing
@@ -10,7 +10,7 @@ A station is **one object in one file**. That is the entire contribution.
 
 ## Run it locally first
 
-Vibing uses native ES modules, and browsers refuse to load those over the
+PromptLands uses native ES modules, and browsers refuse to load those over the
 `file://` protocol.
 
 **Double-clicking `index.html` will not work.** You get a blank page and a CORS

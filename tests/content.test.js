@@ -26,12 +26,15 @@ import assert from "node:assert/strict";
 import { MAX_WALK_TILES, RECEIPT_FIELDS, validateContent } from "../src/content/validate.js";
 import { gates } from "../src/content/gates.js";
 import { legend, mapDef } from "../src/content/map.js";
+import { exhibits } from "../src/content/exhibits.js";
+import { NOTE_CATEGORIES, notes } from "../src/content/notes.js";
 import { guides } from "../src/content/guides.js";
+import { invitation } from "../src/content/invitation.js";
 import { stations } from "../src/content/stations.js";
 
 /** The real content, deep-copied, with one thing broken in it. */
 function brokenContent(mutate) {
-  const bundle = structuredClone({ stations, gates, guides, mapDef, legend });
+  const bundle = structuredClone({ stations, gates, guides, exhibits, invitation, mapDef, legend });
   if (mutate) mutate(bundle);
   return validateContent(bundle);
 }
@@ -61,7 +64,7 @@ function setTile(bundle, x, y, char) {
 // ============================================================== the real thing
 
 test("the real content is valid: no problems at all", () => {
-  const problems = validateContent({ stations, gates, guides, mapDef, legend });
+  const problems = validateContent({ stations, gates, guides, exhibits, invitation, mapDef, legend });
   assert.deepEqual(
     problems,
     [],
@@ -95,79 +98,83 @@ test("validateContent never throws, whatever it is handed", () => {
 test("a station missing a required field fires, naming the station id", () => {
   for (const field of ["title", "sprite", "problem", "build", "prompt"]) {
     const problems = brokenContent((bundle) => {
-      station(bundle, "monty")[field] = "";
+      station(bundle, "requirements-linter")[field] = "";
     });
-    const message = fires(problems, new RegExp(`Station "monty".*"${field}"`));
+    const message = fires(problems, new RegExp(`Station "requirements-linter".*"${field}"`));
     assert.ok(!/row \d/.test(message), "a definition fault has no row and column");
   }
 });
 
 test("a station with no id at all still produces a usable message", () => {
   const problems = brokenContent((bundle) => {
-    delete station(bundle, "monty").id;
+    delete station(bundle, "requirements-linter").id;
   });
   fires(problems, /Station "\(no id\)" needs an id/);
 });
 
 test("a station with a zone outside 1-3 fires", () => {
   const problems = brokenContent((bundle) => {
-    station(bundle, "monty").zone = 4;
+    station(bundle, "requirements-linter").zone = 4;
   });
-  fires(problems, /Station "monty" has zone 4\. It must be one of 1, 2, 3\./);
+  fires(problems, /Station "requirements-linter" has zone 4\. It must be one of 1, 2, 3\./);
 });
 
 test("two stations with the same id fires", () => {
   const problems = brokenContent((bundle) => {
-    station(bundle, "monty").id = "linky";
+    station(bundle, "requirements-linter").id = "interactive-prd";
   });
-  fires(problems, /two stations with the id "linky"/);
+  fires(problems, /two stations with the id "interactive-prd"/);
 });
 
-test("a zone with the wrong number of stations fires, naming the zone", () => {
-  const tooFew = brokenContent((bundle) => {
-    bundle.stations = bundle.stations.filter((s) => s.id !== "monty");
+test("a zone with no stations at all fires, naming the zone", () => {
+  // The rule used to be "exactly three". It is now "at least one": things that
+  // already exist moved off the difficulty curve and became exhibits, so Zone 3
+  // legitimately holds one challenge. What still has to hold is that no zone is
+  // a corridor.
+  const empty = brokenContent((bundle) => {
+    bundle.stations = bundle.stations.filter((s) => s.zone !== 3);
   });
-  fires(tooFew, /Zone 3 has 2 stations\. Every zone has exactly 3/);
-
-  const tooMany = brokenContent((bundle) => {
-    const extra = structuredClone(station(bundle, "monty"));
-    extra.id = "monty-two";
-    extra.flagship = false;
-    extra.tile = { x: 78, y: 12 };
-    bundle.stations.push(extra);
-  });
-  fires(tooMany, /Zone 3 has 4 stations/);
+  fires(empty, /Zone 3 has 0 stations\. Every zone needs at least 1/);
 });
 
-test("a zone without exactly one flagship fires, naming the offenders", () => {
+test("flagships are required where there is something to be distinct from", () => {
+  // Two in a multi-station zone is wrong.
   const two = brokenContent((bundle) => {
-    station(bundle, "monty").flagship = true;
+    station(bundle, "requirements-linter").flagship = true;
   });
-  fires(two, /Zone 3 has 2 flagship stations \("linky", "monty"\)/);
+  fires(two, /Zone 2 has 3 stations and 2 flagships .* but wants 1/);
 
+  // None in a multi-station zone is wrong.
   const none = brokenContent((bundle) => {
-    station(bundle, "linky").flagship = false;
+    station(bundle, "backlog-swipe").flagship = false;
   });
-  fires(none, /Zone 3 has 0 flagship stations \(none\)/);
+  fires(none, /Zone 2 has 3 stations and 0 flagships \(none\), but wants 1/);
+
+  // And one in a SINGLE-station zone is also wrong: a marker only means
+  // anything when something nearby is unmarked.
+  const lonely = brokenContent((bundle) => {
+    station(bundle, "hand-it-over").flagship = true;
+  });
+  fires(lonely, /Zone 3 has 1 stations and 1 flagships .* but wants 0/);
 });
 
 test("a station with too few or too many steps fires", () => {
   const few = brokenContent((bundle) => {
-    station(bundle, "monty").steps = ["only one"];
+    station(bundle, "requirements-linter").steps = ["only one"];
   });
-  fires(few, /Station "monty" has 1 steps\. The house style is 3 to 5/);
+  fires(few, /Station "requirements-linter" has 1 steps\. The house style is 3 to 5/);
 
   const many = brokenContent((bundle) => {
-    station(bundle, "monty").steps = ["a", "b", "c", "d", "e", "f"];
+    station(bundle, "requirements-linter").steps = ["a", "b", "c", "d", "e", "f"];
   });
-  fires(many, /Station "monty" has 6 steps/);
+  fires(many, /Station "requirements-linter" has 6 steps/);
 });
 
 test("an empty step fires", () => {
   const problems = brokenContent((bundle) => {
-    station(bundle, "monty").steps[1] = "   ";
+    station(bundle, "requirements-linter").steps[1] = "   ";
   });
-  fires(problems, /Station "monty" has an empty step/);
+  fires(problems, /Station "requirements-linter" has an empty step/);
 });
 
 // -------------------------------------------------------------- the receipt
@@ -184,37 +191,37 @@ test("every real receipt has all seven fields, in CLAUDE.md's order", () => {
 
 test("a receipt missing a field fires, listing the seven", () => {
   const problems = brokenContent((bundle) => {
-    delete station(bundle, "monty").receipt.cost;
+    delete station(bundle, "requirements-linter").receipt.cost;
   });
-  const message = fires(problems, /Station "monty" has receipt fields/);
+  const message = fires(problems, /Station "requirements-linter" has receipt fields/);
   assert.match(message, /never add an eighth/);
   assert.match(message, /buildTime, tool, cost, lines, dataTouched, skill, hardestPart/);
 });
 
 test("a receipt with an eighth field fires", () => {
   const problems = brokenContent((bundle) => {
-    station(bundle, "monty").receipt.testsWritten = "145";
+    station(bundle, "requirements-linter").receipt.testsWritten = "145";
   });
-  fires(problems, /Station "monty" has receipt fields \[.*testsWritten\]/);
+  fires(problems, /Station "requirements-linter" has receipt fields \[.*testsWritten\]/);
 });
 
 test("a receipt with the fields in the wrong order fires", () => {
   const problems = brokenContent((bundle) => {
-    const receipt = station(bundle, "monty").receipt;
+    const receipt = station(bundle, "requirements-linter").receipt;
     const reordered = { tool: receipt.tool, buildTime: receipt.buildTime };
     for (const field of RECEIPT_FIELDS) {
       if (field !== "tool" && field !== "buildTime") reordered[field] = receipt[field];
     }
-    station(bundle, "monty").receipt = reordered;
+    station(bundle, "requirements-linter").receipt = reordered;
   });
-  fires(problems, /Station "monty" has receipt fields \[tool, buildTime/);
+  fires(problems, /Station "requirements-linter" has receipt fields \[tool, buildTime/);
 });
 
 test("a blank receipt field fires, and says what to write instead of guessing", () => {
   const problems = brokenContent((bundle) => {
-    station(bundle, "monty").receipt.lines = "";
+    station(bundle, "requirements-linter").receipt.lines = "";
   });
-  const message = fires(problems, /Station "monty" has an empty receipt field "lines"/);
+  const message = fires(problems, /Station "requirements-linter" has an empty receipt field "lines"/);
   assert.match(message, /never guess a number/);
 });
 
@@ -222,16 +229,16 @@ test("a blank receipt field fires, and says what to write instead of guessing", 
 
 test("an unknown demo type fires", () => {
   const problems = brokenContent((bundle) => {
-    station(bundle, "monty").demo = { type: "interpretive-dance" };
+    station(bundle, "requirements-linter").demo = { type: "interpretive-dance" };
   });
-  fires(problems, /Station "monty" needs demo: \{ type \} where type is one of/);
+  fires(problems, /Station "requirements-linter" needs demo: \{ type \} where type is one of/);
 });
 
 test('demo.type "embedded" fires, because it is not implemented', () => {
   const problems = brokenContent((bundle) => {
-    station(bundle, "monty").demo = { type: "embedded" };
+    station(bundle, "requirements-linter").demo = { type: "embedded" };
   });
-  fires(problems, /Station "monty" has demo\.type "embedded", which is not implemented/);
+  fires(problems, /Station "requirements-linter" has demo\.type "embedded", which is not implemented/);
 });
 
 test('demo.type "external" with no links is legal: it is the honest state', () => {
@@ -239,10 +246,10 @@ test('demo.type "external" with no links is legal: it is the honest state', () =
   // says "No demo linked for this one yet", which is true; "placeholder" would
   // say "Playable demo coming soon", which would be a promise nobody has made.
   const problems = brokenContent((bundle) => {
-    station(bundle, "linky").links = [];
+    station(bundle, "interactive-prd").links = [];
   });
   assert.deepEqual(
-    problems.filter((problem) => /"linky".*(demo|link)/.test(problem)),
+    problems.filter((problem) => /"interactive-prd".*(demo|link)/.test(problem)),
     [],
     "external with no links must not be reported as a problem"
   );
@@ -250,18 +257,18 @@ test('demo.type "external" with no links is legal: it is the honest state', () =
 
 test("a link with no href fires", () => {
   const problems = brokenContent((bundle) => {
-    station(bundle, "linky").links = [{ label: "somewhere" }];
+    station(bundle, "interactive-prd").links = [{ label: "somewhere" }];
   });
-  fires(problems, /Station "linky" has a link with no href/);
+  fires(problems, /Station "interactive-prd" has a link with no href/);
 });
 
 // ------------------------------------------------------------------ sprites
 
 test("an unknown station sprite fires, and says where sprite names come from", () => {
   const problems = brokenContent((bundle) => {
-    station(bundle, "monty").sprite = "space_hopper";
+    station(bundle, "requirements-linter").sprite = "space_hopper";
   });
-  const message = fires(problems, /Station "monty" uses sprite "space_hopper"/);
+  const message = fires(problems, /Station "requirements-linter" uses sprite "space_hopper"/);
   assert.match(message, /src\/content\/sprites\.js/);
 });
 
@@ -434,9 +441,9 @@ test("a guide in a zone that does not exist fires", () => {
 
 test("a station off the edge of the map fires, giving the map size", () => {
   const problems = brokenContent((bundle) => {
-    station(bundle, "monty").tile = { x: 400, y: 3 };
+    station(bundle, "requirements-linter").tile = { x: 400, y: 3 };
   });
-  fires(problems, /The station "monty" is at tile \(400, 3\), off a map that is 92x20 tiles\./);
+  fires(problems, /The station "requirements-linter" is at tile \(400, 3\), off a map that is 92x20 tiles\./);
 });
 
 test("a station on a solid map tile fires, and says how to fix it", () => {
@@ -503,11 +510,11 @@ test("an unreachable station fires, even with every gate open", () => {
     // to be stood next to, so this is a reachability fault and nothing else.
     setTile(bundle, 64, 4, "_");
     setTile(bundle, 64, 5, "_");
-    station(bundle, "linky").tile = { x: 64, y: 5 };
+    station(bundle, "interactive-prd").tile = { x: 64, y: 5 };
   });
   fires(
     problems,
-    /The station "linky" at tile \(64, 5\) cannot be walked to from the spawn even with every gate open/
+    /The station "interactive-prd" at tile \(64, 5\) cannot be walked to from the spawn even with every gate open/
   );
 });
 
@@ -569,4 +576,191 @@ test("a spawn on a solid tile is reported with the legend character", () => {
     bundle.mapDef.spawn = { x: 0, y: 0 };
   });
   fires(problems, /spawn \(0, 0\) is on a solid tile/);
+});
+
+// ================================================================== exhibits
+//
+// An exhibit is proof rather than homework, and the rules below are what stop it
+// quietly becoming either a station or a fiction.
+
+test("the exhibits are what the map says they are", () => {
+  assert.ok(exhibits.length > 0, "there has to be at least one thing that actually exists");
+  for (const exhibit of exhibits) {
+    assert.deepEqual(
+      Object.keys(exhibit.receipt),
+      RECEIPT_FIELDS,
+      `exhibit "${exhibit.id}" must carry the seven receipt fields in order`
+    );
+  }
+});
+
+test("an exhibit with an estimate on its receipt fires: evidence does not guess", () => {
+  const problems = brokenContent((bundle) => {
+    bundle.exhibits[0].receipt.lines = "~900 (est.)";
+  });
+  const message = fires(problems, /The exhibit "monty" has estimates on its receipt \(lines\)/);
+  assert.match(message, /evidence with guessed numbers is not evidence/);
+  assert.match(message, /Not recorded/);
+});
+
+test('"Not recorded" is legal on an exhibit: it is a fact, not an estimate', () => {
+  const problems = brokenContent((bundle) => {
+    bundle.exhibits[0].receipt.buildTime = "Not recorded";
+  });
+  assert.ok(
+    !problems.some((p) => /estimates on its receipt/.test(p)),
+    "saying nobody wrote it down is not the same as guessing what it would have been"
+  );
+});
+
+test("an exhibit carrying lessons fires: lessons are centralised", () => {
+  for (const field of ["lessons", "lesson", "learned", "lessonsLearned"]) {
+    const problems = brokenContent((bundle) => {
+      bundle.exhibits[0][field] = ["something I learned"];
+    });
+    const message = fires(problems, new RegExp(`The exhibit "monty" has a "${field}" field`));
+    assert.match(message, /src\/content\/notes\.js/);
+  }
+});
+
+test("an exhibit missing a required field fires, naming the exhibit", () => {
+  for (const field of ["title", "what", "happened", "sprite"]) {
+    const problems = brokenContent((bundle) => {
+      bundle.exhibits[1][field] = "";
+    });
+    fires(problems, new RegExp(`The exhibit "linky" needs a non-empty "${field}"`));
+  }
+});
+
+test("an exhibit drawn with an opaque sprite fires", () => {
+  const problems = brokenContent((bundle) => {
+    bundle.exhibits[0].sprite = "grass";
+  });
+  fires(problems, /The exhibit "monty" uses sprite "grass", which is an opaque terrain tile/);
+});
+
+test("a map with no exhibits fires: an argument needs evidence in it", () => {
+  const problems = brokenContent((bundle) => {
+    bundle.exhibits = [];
+  });
+  fires(problems, /There are no exhibits/);
+});
+
+test("an exhibit standing on a station fires, like any other collision", () => {
+  const problems = brokenContent((bundle) => {
+    bundle.exhibits[0].tile = { ...station(bundle, "cyoa").tile };
+  });
+  fires(problems, /both on tile/);
+});
+
+// =============================================================== the invitation
+
+test("the invitation has no receipt, and adding one fires", () => {
+  assert.equal(invitation.receipt, undefined, "the shipped invitation must not carry one");
+
+  const problems = brokenContent((bundle) => {
+    bundle.invitation.receipt = { buildTime: "an evening" };
+  });
+  const message = fires(problems, /The invitation has a receipt/);
+  assert.match(message, /whose whole job is to be believed/);
+});
+
+test("a missing invitation fires: the game would end by running out of map", () => {
+  const problems = brokenContent((bundle) => {
+    bundle.invitation = null;
+  });
+  fires(problems, /There is no invitation/);
+});
+
+test("an invitation missing a required field fires", () => {
+  for (const field of ["title", "horizon", "ask", "prompt"]) {
+    const problems = brokenContent((bundle) => {
+      bundle.invitation[field] = "";
+    });
+    fires(problems, new RegExp(`The invitation needs a non-empty "${field}"`));
+  }
+});
+
+test("the invitation obeys the same step and link rules as a station", () => {
+  const few = brokenContent((bundle) => {
+    bundle.invitation.steps = ["only one"];
+  });
+  fires(few, /The invitation has 1 steps\. The house style is 3 to 5/);
+
+  const badLink = brokenContent((bundle) => {
+    bundle.invitation.links = [{ label: "nowhere" }];
+  });
+  fires(badLink, /The invitation has a link with no href/);
+});
+
+test("the invitation is placed and reachable like everything else", () => {
+  const offMap = brokenContent((bundle) => {
+    bundle.invitation.tile = { x: 999, y: 999 };
+  });
+  fires(offMap, /invitation.*\(999, 999\)/);
+});
+
+// =============================================================== field notes
+
+test("the shipped field notes are all well formed and in a real category", () => {
+  assert.ok(notes.length >= 10, "a reference with fewer than ten entries is a list");
+  for (const note of notes) {
+    assert.ok(NOTE_CATEGORIES.includes(note.category), `"${note.id}" is in a listed category`);
+  }
+});
+
+test("a note in an unlisted category fires: the notebook would never show it", () => {
+  const original = notes[0].category;
+  notes[0].category = "Miscellaneous";
+  try {
+    const problems = brokenContent();
+    const message = fires(problems, /The field note ".*" has category "Miscellaneous"/);
+    assert.match(message, /written but never shown/);
+  } finally {
+    notes[0].category = original;
+  }
+});
+
+test("a note missing a required field fires, naming the note", () => {
+  for (const field of ["title", "body"]) {
+    const original = notes[0][field];
+    notes[0][field] = "";
+    try {
+      fires(brokenContent(), new RegExp(`The field note ".*" needs a non-empty "${field}"`));
+    } finally {
+      notes[0][field] = original;
+    }
+  }
+});
+
+test("a see-also pointing at a note that does not exist fires, naming both", () => {
+  const problems = brokenContent((bundle) => {
+    station(bundle, "cyoa").notes = ["write-it-first", "a-note-nobody-wrote"];
+  });
+  const message = fires(problems, /"cyoa" cross-references a field note "a-note-nobody-wrote"/);
+  assert.match(message, /Check the spelling, or write the note/);
+});
+
+test("an exhibit's see-also is checked too, not just a station's", () => {
+  const problems = brokenContent((bundle) => {
+    bundle.exhibits[0].notes = ["not-a-real-note"];
+  });
+  fires(problems, /"monty" cross-references a field note "not-a-real-note"/);
+});
+
+test("notes is optional: leaving it out entirely is legal", () => {
+  const problems = brokenContent((bundle) => {
+    delete station(bundle, "cyoa").notes;
+  });
+  assert.ok(
+    !problems.some((p) => /cross-references a field note/.test(p)),
+    "a station that points at nothing is fine"
+  );
+});
+
+test("a notes field that is not an array fires", () => {
+  const problems = brokenContent((bundle) => {
+    station(bundle, "cyoa").notes = "write-it-first";
+  });
+  fires(problems, /"cyoa" has a "notes" field that is not an array/);
 });

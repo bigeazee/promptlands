@@ -209,8 +209,13 @@ The rules it enforces:
 | Fewer than three or more than five steps | Fewer and nobody can follow it, more and nobody reads it |
 | A duplicate `id` | Progress is saved against ids |
 | A zone that is not 1, 2 or 3 | There are three zones |
-| A zone with more or fewer than three stations | The zones have to be the same size for the curve to read |
-| A zone with more or fewer than one flagship | One per zone gets talked through live |
+| A zone with no stations at all | A zone with nothing to attempt is a corridor |
+| A zone of two or more stations without exactly one flagship | One per zone gets talked through live |
+| A flagship in a zone with only one station | A marker means nothing with nothing to be distinct from |
+| An estimate on an exhibit's receipt | An exhibit is evidence, and evidence does not guess |
+| A lessons field on an exhibit | Lessons are centralised in src/content/notes.js |
+| A receipt on the invitation | There is nothing to put on one |
+| A "See also" pointing at a note that does not exist | It would render a cross-reference to nothing |
 | A zone with more or fewer than one guide | The guide is what makes that zone's gate answer findable |
 | `demo.type` that is not `placeholder` or `external` | `embedded` is not implemented yet |
 | A sprite name that is not in `sprites.js` | A typo would be a hole in the live site |

@@ -31,6 +31,7 @@ const BINDINGS = {
   KeyA: "left",
   ArrowRight: "right",
   KeyD: "right",
+  KeyN: "notes",
   KeyE: "interact",
   Enter: "interact",
   Space: "interact",

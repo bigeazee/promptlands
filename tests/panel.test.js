@@ -63,6 +63,48 @@ async function renderStation(overrides) {
   }
 }
 
+/** The same, for an exhibit or the invitation: both take a different open path. */
+async function renderVia(method, content) {
+  const dom = installFakeDom();
+  try {
+    const { createPanel } = await import("../src/ui/panel.js");
+    const root = dom.document.createElement("div");
+    dom.body.append(root);
+    createPanel(root)[method](content);
+    return byClass(root, "panel-body")[0];
+  } finally {
+    dom.detach();
+  }
+}
+
+const EXHIBIT = {
+  id: "example-exhibit",
+  zone: 1,
+  title: "Example Exhibit",
+  what: "What it is.",
+  happened: "What came of it.",
+  receipt: {
+    buildTime: "Not recorded",
+    tool: "Not recorded",
+    cost: "Free.",
+    lines: "Not counted",
+    dataTouched: "None.",
+    skill: "Something",
+    hardestPart: "Something else",
+  },
+  links: [],
+};
+
+const INVITATION = {
+  zone: 3,
+  title: "Example Invitation",
+  horizon: "What is coming.",
+  ask: "Go and do it.",
+  steps: ["One.", "Two.", "Three."],
+  prompt: "Help me add one.",
+  links: [{ label: "The repository", href: "https://example.invalid/repo" }],
+};
+
 test('demo.type "placeholder" says a demo is coming', async () => {
   const body = await renderStation({ demo: { type: "placeholder" }, links: [] });
   assert.match(body.textContent, /Playable demo coming soon\./);
@@ -91,4 +133,58 @@ test('demo.type "external" with links renders them', async () => {
   assert.equal(anchors[0].children[0].href, "https://example.invalid/thing");
   assert.equal(anchors[0].textContent, "The thing");
   assert.ok(!/No demo linked|coming soon/i.test(body.textContent));
+});
+
+// ================================================================== exhibits
+
+test("an exhibit panel says what it is and what happened, and asks nothing", async () => {
+  const body = await renderVia("openExhibit", EXHIBIT);
+  const text = body.textContent;
+
+  assert.match(text, /What it is/);
+  assert.match(text, /What happened/);
+  // No four sections: nobody is being asked to build this one.
+  assert.ok(!/Get started/.test(text), "an exhibit has no steps and no starter prompt");
+  assert.ok(!/What you.d build/.test(text), "an exhibit is not a challenge");
+});
+
+test("an exhibit receipt says its figures are not guesses", async () => {
+  const body = await renderVia("openExhibit", EXHIBIT);
+  const note = byClass(body, "receipt-note")[0];
+  assert.ok(note, "an exhibit receipt carries a note about what the reader is looking at");
+  assert.match(note.textContent, /Nothing here is a guess/);
+  // And not the estimate note, which would be explaining a marker that is absent.
+  assert.ok(!/marked \(est\.\)/.test(note.textContent));
+});
+
+test("a station receipt still explains its estimate markers", async () => {
+  const body = await renderStation({});
+  const note = byClass(body, "receipt-note")[0];
+  assert.match(note.textContent, /Anything marked \(est\.\)/);
+});
+
+// =============================================================== the invitation
+
+test("the invitation panel renders no receipt at all", async () => {
+  const body = await renderVia("openInvitation", INVITATION);
+
+  assert.equal(byClass(body, "receipt").length, 0, "the invitation must not render a receipt");
+  assert.match(body.textContent, /What is coming/);
+  assert.match(body.textContent, /The ask/);
+  assert.match(body.textContent, /Get started/);
+});
+
+test("the invitation still offers its links and its starter prompt", async () => {
+  const body = await renderVia("openInvitation", INVITATION);
+  assert.equal(byClass(body, "demo-links").length, 1, "its links are rendered");
+  assert.equal(byClass(body, "prompt-text").length, 1, "so is the prompt somebody copies");
+});
+
+test("both new panels refuse an empty argument rather than rendering a blank", async () => {
+  for (const method of ["openExhibit", "openInvitation"]) {
+    await assert.rejects(
+      () => renderVia(method, null),
+      /needs (an exhibit|the invitation) object/
+    );
+  }
 });

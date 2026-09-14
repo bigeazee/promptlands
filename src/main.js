@@ -25,12 +25,15 @@ import { lockGates, markSolid } from "./engine/zones.js";
 import { TILE_SIZE } from "./content/sprites.js";
 import { gates } from "./content/gates.js";
 import { legend, mapDef } from "./content/map.js";
+import { EXHIBIT_MARKER_SPRITE, exhibits } from "./content/exhibits.js";
 import { guideId, guides } from "./content/guides.js";
+import { invitation } from "./content/invitation.js";
 import { FLAGSHIP_MARKER_SPRITE, stations } from "./content/stations.js";
 import { createProgress } from "./state/progress.js";
 import { createDialogue } from "./ui/dialogue.js";
 import { createGateQuiz } from "./ui/gate.js";
 import { createHud } from "./ui/hud.js";
+import { createNotes } from "./ui/notes.js";
 import { createPanel } from "./ui/panel.js";
 
 const canvas = document.getElementById("game");
@@ -119,7 +122,7 @@ for (const gate of gates) {
   entities.push(entity);
 }
 
-for (const item of [...stations, ...guides]) {
+for (const item of [...stations, ...guides, ...exhibits, invitation]) {
   entities.push({
     sprite: item.sprite,
     pxX: item.tile.x * TILE_SIZE,
@@ -138,16 +141,29 @@ for (const station of stations) {
   });
 }
 
+// Exhibits get their own marker, by the same mechanism and for a sharper reason:
+// proof and homework must be tellable apart before anybody reads a word, or the
+// player walks up to Monty expecting another thing to go and build.
+for (const exhibit of exhibits) {
+  entities.push({
+    sprite: EXHIBIT_MARKER_SPRITE,
+    pxX: exhibit.tile.x * TILE_SIZE,
+    pxY: (exhibit.tile.y - 1) * TILE_SIZE,
+  });
+}
+
 // ---------------------------------------------------------------------- ui
 
 const hud = createHud(document.getElementById("hud"));
 const panel = createPanel(document.getElementById("panel-root"));
 const quiz = createGateQuiz(document.getElementById("quiz-root"));
 const dialogue = createDialogue(document.getElementById("dialogue-root"));
+const notes = createNotes(document.getElementById("notes-root"));
 
 /** Identity, not id: a station and a gate could legitimately share an id. */
 const gateSet = new Set(gates);
 const guideSet = new Set(guides);
+const exhibitSet = new Set(exhibits);
 
 /** Stations plus any still-locked gate. Rebuilt by syncGates. */
 const interactables = [];
@@ -162,6 +178,8 @@ try {
   // After startGame, because both need the parsed grid it returns.
   markSolid(game.grid, stations, "station");
   markSolid(game.grid, guides, "guide");
+  markSolid(game.grid, exhibits, "exhibit");
+  markSolid(game.grid, [invitation], "invitation");
   syncGates();
 
   refreshProgress();
@@ -173,6 +191,7 @@ try {
   panel.onClose(onOverlayClosed);
   quiz.onClose(onOverlayClosed);
   dialogue.onClose(onOverlayClosed);
+  notes.onClose(onOverlayClosed);
   focusCanvas();
 
   // Exposed so pause(), resume() and destroy() can be tried from the browser
@@ -208,6 +227,13 @@ function tick() {
   const target = interactableFor(interactables, game.player);
   // Consumed whether or not there is a target. An E pressed in an empty field
   // must not sit in the queue and fire the moment you walk up to something.
+  // The notebook is a reference, so it opens from anywhere on the map rather
+  // than from standing next to something.
+  if (game.input.consumePress("notes")) {
+    openNotes();
+    return;
+  }
+
   const pressed = game.input.consumePress("interact");
 
   if (target) hud.showPrompt(promptFor(target));
@@ -225,18 +251,22 @@ function tick() {
 let overlayJustClosed = false;
 
 function anyOverlayOpen() {
-  return panel.isOpen() || quiz.isOpen() || dialogue.isOpen();
+  return panel.isOpen() || quiz.isOpen() || dialogue.isOpen() || notes.isOpen();
 }
 
 function promptFor(item) {
   if (gateSet.has(item)) return "Answer the question";
   if (guideSet.has(item)) return `Talk to ${item.name}`;
+  if (exhibitSet.has(item)) return `Look at ${item.title}`;
+  if (item === invitation) return `Open ${item.title}`;
   return `Open ${item.title}`;
 }
 
 function openFor(item) {
   if (gateSet.has(item)) openGate(item);
   else if (guideSet.has(item)) openGuide(item);
+  else if (exhibitSet.has(item)) openExhibit(item);
+  else if (item === invitation) openInvitation();
   else openStation(item);
 }
 
@@ -249,6 +279,26 @@ function openGuide(guide) {
   const id = guideId(guide);
   dialogue.open(guide, { seen: progress.hasSpokenTo(id) });
   progress.markSpokenTo(id);
+  pauseForOverlay();
+}
+
+/**
+ * An exhibit is proof rather than homework, so it does not count towards the
+ * visited total: the HUD says "x / 7 stations" and must keep meaning challenges.
+ */
+function openExhibit(exhibit) {
+  panel.openExhibit(exhibit);
+  pauseForOverlay();
+}
+
+function openNotes() {
+  notes.open();
+  pauseForOverlay();
+}
+
+/** One object, no receipt, and nothing to count. */
+function openInvitation() {
+  panel.openInvitation(invitation);
   pauseForOverlay();
 }
 
@@ -299,6 +349,8 @@ function syncGates() {
   interactables.length = 0;
   for (const station of stations) interactables.push(station);
   for (const guide of guides) interactables.push(guide);
+  for (const exhibit of exhibits) interactables.push(exhibit);
+  interactables.push(invitation);
 
   for (const gate of gates) {
     const unlocked = progress.isZoneUnlocked(gate.toZone);
@@ -325,6 +377,12 @@ function wireControls() {
   const resetConfirm = document.getElementById("reset-confirm");
   const resetYes = document.getElementById("reset-yes");
   const resetNo = document.getElementById("reset-no");
+
+  const notesButton = document.getElementById("notes-button");
+  notesButton.addEventListener("click", () => {
+    resetConfirm.hidden = true;
+    openNotes();
+  });
 
   const exportButton = document.getElementById("export-button");
   const exportBox = document.getElementById("export-box");

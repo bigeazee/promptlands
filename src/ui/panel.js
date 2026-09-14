@@ -20,6 +20,7 @@
  *      a working panel for a jumping page. We scroll by hand instead.
  */
 
+import { findNote } from "../content/notes.js";
 import { el, trapTab } from "./overlay.js";
 
 /** The seven receipt fields, in CLAUDE.md's order. Never reorder, never trim. */
@@ -39,6 +40,8 @@ const SCROLL_STEP = 72;
 /**
  * @param {HTMLElement} root an empty container element in index.html
  * @returns {{open: (station: object) => void,
+ *            openExhibit: (exhibit: object) => void,
+ *            openInvitation: (invitation: object) => void,
  *            close: () => void, isOpen: () => boolean,
  *            onClose: (handler: Function) => void}}
  */
@@ -133,6 +136,56 @@ export function createPanel(root) {
       : `Zone ${station.zone}`;
     title.textContent = station.title || station.id;
 
+    show(content);
+  }
+
+  /**
+   * An exhibit is proof, not homework: what the thing is, what came of it, and a
+   * receipt that is allowed no estimates. No four sections, because there is no
+   * "get started" - nobody is being asked to build this one.
+   *
+   * No lessons section either, deliberately. What building these taught is
+   * general and lives in the Field Notes; see src/content/exhibits.js.
+   */
+  function openExhibitPanel(exhibit) {
+    if (!exhibit) throw new Error("panel.openExhibit: needs an exhibit object.");
+
+    const content = [
+      section("What it is", paragraphs(exhibit.what)),
+      section("What happened", paragraphs(exhibit.happened)),
+      linkSection("Go and look", exhibit.links),
+      section("The receipt", [receipt(exhibit.receipt, { exhibit: true })]),
+      seeAlso(exhibit.notes),
+    ].filter(Boolean);
+
+    eyebrow.textContent = `Zone ${exhibit.zone} · Built and used`;
+    title.textContent = exhibit.title || exhibit.id;
+    show(content);
+  }
+
+  /**
+   * The invitation has no receipt and the panel must not invent one. A receipt
+   * answers "what did this cost to build?", which is not a question this object
+   * can answer - and seven made-up figures on the one object whose job is to be
+   * believed would cost more than the card is worth.
+   */
+  function openInvitationPanel(invitation) {
+    if (!invitation) throw new Error("panel.openInvitation: needs the invitation object.");
+
+    const content = [
+      section("What is coming", paragraphs(invitation.horizon)),
+      section("The ask", paragraphs(invitation.ask)),
+      section("Get started", [steps(invitation.steps), promptBlock(invitation.prompt)]),
+      linkSection("Where to go", invitation.links),
+    ].filter(Boolean);
+
+    eyebrow.textContent = "The last one";
+    title.textContent = invitation.title || "Beyond the Map";
+    show(content);
+  }
+
+  /** The three open paths differ only in what they build. This is the rest. */
+  function show(content) {
     body.replaceChildren(...content);
     body.scrollTop = 0;
 
@@ -167,6 +220,7 @@ export function createPanel(root) {
     nodes.push(demoSection(station));
     nodes.push(section("Get started", [steps(station.steps), promptBlock(station.prompt)]));
     nodes.push(section("The receipt", [receipt(station.receipt)]));
+    nodes.push(seeAlso(station.notes));
 
     return nodes.filter(Boolean);
   }
@@ -240,7 +294,7 @@ export function createPanel(root) {
     }, 2000);
   }
 
-  function receipt(fields) {
+  function receipt(fields, { exhibit = false } = {}) {
     const card = el("div", "receipt");
     const grid = el("dl", "receipt-grid");
     const values = fields && typeof fields === "object" ? fields : {};
@@ -261,7 +315,19 @@ export function createPanel(root) {
     // receipt field, because there are seven fields and there will only ever be
     // seven fields.
     const estimated = RECEIPT_FIELDS.some(([key]) => /\(est\.\)/.test(String(values[key] ?? "")));
-    if (estimated) {
+    if (exhibit) {
+      // An exhibit's receipt carries no estimates at all - the validator refuses
+      // one - so the note says what the reader is actually looking at rather
+      // than explaining a marker that is not there.
+      card.append(
+        el(
+          "p",
+          "receipt-note",
+          "This one was built and used. Figures are measured, or say so where nobody wrote " +
+            "them down at the time. Nothing here is a guess."
+        )
+      );
+    } else if (estimated) {
       card.append(
         el(
           "p",
@@ -272,6 +338,51 @@ export function createPanel(root) {
       );
     }
     return card;
+  }
+
+  /**
+   * The bridge to the Field Notes. Titles only - the notebook holds the bodies,
+   * and duplicating them here is how the guidance ended up in nine places in
+   * the first version. Returns null when a thing cross-references nothing.
+   */
+  function seeAlso(ids) {
+    const list = Array.isArray(ids) ? ids : [];
+    if (list.length === 0) return null;
+
+    const items = el("ul", "see-also");
+    for (const id of list) {
+      const note = findNote(id);
+      // A bad id is caught by the content validator long before anybody sees
+      // this, so the fallback is just belt and braces rather than a design.
+      items.append(el("li", null, note ? note.title : id));
+    }
+    const wrap = el("div", "see-also-block");
+    wrap.append(
+      el("p", "see-also-lead", "In the field notes — press N to open them:"),
+      items
+    );
+    return section("See also", [wrap]);
+  }
+
+  /** Shared by exhibits and the invitation. Returns null when there is nothing to link. */
+  function linkSection(heading, links) {
+    const list = Array.isArray(links) ? links : [];
+    if (list.length === 0) return null;
+    return section(heading, [linkList(list)]);
+  }
+
+  function linkList(links) {
+    const list = el("ul", "demo-links");
+    for (const link of links) {
+      const item = el("li");
+      const anchor = el("a", null, link.label || link.href);
+      anchor.href = link.href;
+      anchor.target = "_blank";
+      anchor.rel = "noopener noreferrer";
+      item.append(anchor);
+      list.append(item);
+    }
+    return list;
   }
 
   function demoSection(station) {
@@ -289,17 +400,7 @@ export function createPanel(root) {
       if (links.length === 0) {
         return section("The demo", [el("p", "demo-note", "No demo linked for this one yet.")]);
       }
-      const list = el("ul", "demo-links");
-      for (const link of links) {
-        const item = el("li");
-        const anchor = el("a", null, link.label || link.href);
-        anchor.href = link.href;
-        anchor.target = "_blank";
-        anchor.rel = "noopener noreferrer";
-        item.append(anchor);
-        list.append(item);
-      }
-      return section("The demo", [list]);
+      return section("The demo", [linkList(links)]);
     }
 
     // placeholder, and anything unrecognised, gets the honest coming-soon state.
@@ -315,6 +416,8 @@ export function createPanel(root) {
 
   return {
     open: openPanel,
+    openExhibit: openExhibitPanel,
+    openInvitation: openInvitationPanel,
     close,
     isOpen() {
       return open;

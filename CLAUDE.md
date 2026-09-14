@@ -141,8 +141,8 @@ licence and updating `CREDITS.md`.
 /src/
   main.js        boot module: the only place engine, content, UI and state meet
   engine/        loop, input, camera, collision, renderer
-  ui/            panel, gate quiz, HUD
-  content/       stations.js, gates.js, map.js, sprites.js
+  ui/            panel, gate quiz, dialogue, field notes, HUD
+  content/       stations.js, exhibits.js, invitation.js, notes.js, gates.js, guides.js, map.js, sprites.js
   state/         progress, localStorage
 /assets/         Kenney sprites
 /demos/          the playable tools stations link out to, one directory each, same rules as above
@@ -176,7 +176,7 @@ behind a thin adapter, never reached for directly from logic code.
 
 ## 6. Map and progression
 
-Three zones, unlocked in sequence, three stations each. The player starts in Zone 1.
+Three zones, unlocked in sequence. The player starts in Zone 1.
 
 | Zone | Theme | Level |
 |---|---|---|
@@ -184,8 +184,23 @@ Three zones, unlocked in sequence, three stations each. The player starts in Zon
 | 2 | Intermediate — state and data | One file, holds state, imports and exports CSV or JSON |
 | 3 | Advanced — real engineering | Repo, tests, CI, containers, release cadence |
 
-One station per zone is a **flagship** — visually distinct on the map, because it is talked
-through live.
+**The zones grade the complexity of the build, and nothing else.** That is the only axis this
+map has, and it is what the difficulty curve means. Anything that sits in a zone for a
+different reason — because it is important, because it is impressive — quietly breaks it.
+
+That is why **exhibits are not stations** (section 7). A thing that already exists is not a
+challenge, so "how hard would this be for you?" is the wrong question to ask of it, and it
+sits in the zone matching how hard its OWN build was. Monty is in Zone 1 for exactly that
+reason, and the gap between how simple it was and how much it was trusted is the argument of
+the whole talk arriving in one object.
+
+Zones need **at least one** station each. They no longer need three: once things that exist
+came off the curve, Zone 3 legitimately held one challenge, and padding it back to three with
+invented homework would have been worse than the asymmetry.
+
+A **flagship** is the station talked through live, marked on the map. Exactly one per zone
+**with two or more stations**; a zone with a single station has none, because a marker only
+means something when there is something nearby without one.
 
 ### Zone guides
 
@@ -277,6 +292,38 @@ the entire argument of the talk. Never present a guess as a measurement.
 2. **What you'd build** — a short description of the thing
 3. **Get started** — three to five concrete steps, including a copy-pasteable opening prompt
 4. **The receipt** — the seven-field card above
+
+### Three content types, not one
+
+A **station** is a challenge: something to go and build. It has the four sections, the
+seven-field receipt, and a zone that says how complex it is. Contributors add these.
+
+An **exhibit** (`src/content/exhibits.js`) is something that already exists and was used. It
+has `what` it is and `happened` — what came of it — and no steps, because nobody is being
+asked to build it. **An exhibit's receipt may not contain `(est.)` anywhere**, and the
+validator enforces it: an exhibit is the evidence the difficulty curve rests on, and evidence
+with guessed numbers is not evidence. Where a figure was never captured, write
+`"Not recorded"` — a true statement about the past, not an estimate of anything.
+
+The **invitation** (`src/content/invitation.js`) is the one object that asks something of the
+player. There is exactly one, and it has **no receipt**: a receipt answers "what did this cost
+to build?", which it cannot answer, and seven invented figures on the one object whose job is
+to be believed would cost more than the card is worth.
+
+### Field notes, and why lessons are not on the things that taught them
+
+`src/content/notes.js` holds the guidance and the lessons learned, opened with **N** from
+anywhere. Nothing unlocks: it is a reference, and a reference you have to earn is not one.
+
+**Lessons do not live on exhibits or stations.** Most of this started life stapled to
+whichever station happened to need it — good sentences in the wrong place, true everywhere.
+An exhibit says what a thing is and what came of it; what building it *taught* is general and
+belongs in the notebook. A note earns its place by being useful more than once; anything true
+of exactly one station belongs in that station.
+
+Stations and exhibits may carry `notes: ["id", ...]`, rendered as a "See also" line.
+**One-directional only** — content points at notes, notes never point back. Two things to keep
+in sync is one too many.
 
 ---
 

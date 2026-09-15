@@ -13,7 +13,7 @@
  * what never goes in a prompt should not have to remember which of nine panels
  * mentioned it.
  *
- * The same argument is why the exhibits carry no lessons section. An exhibit
+ * The same argument is why the showcases carry no lessons section. A showcase
  * says what a thing is and what came of it. What building it TAUGHT is general,
  * and general things live here.
  *
@@ -168,16 +168,6 @@ export const notes = [
       "that were never meant to be reachable from outside. Write your answers down before you " +
       "publish anything.",
   },
-  {
-    id: "mark-your-estimates",
-    category: "What never goes in",
-    title: "Mark every figure you did not measure",
-    body:
-      "\"~400 (est.)\" costs one word. An audience that spots a single invented number stops " +
-      "believing the ones that were real, and you do not get to find out which number did it.\n\n" +
-      "Where something genuinely was not recorded, say that. \"Not recorded\" is a true " +
-      "statement about the past. It is not a guess, and it does not need a marker.",
-  },
 
   // ------------------------------------------------- Knowing when to stop
   {
@@ -227,8 +217,8 @@ export const notes = [
 /**
  * Look a note up by id.
  *
- * Stations and exhibits cross-reference notes by id, one-directionally: content
- * points at notes and notes never point back. Two things to keep in sync is one
+ * Stations and showcases cross-reference notes by id, one-directionally:
+ * content points at notes and notes never point back. Two things to keep in sync is one
  * thing too many, and the "see also" line is worth far less than a broken link
  * costs.
  *

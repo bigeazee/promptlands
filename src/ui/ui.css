@@ -247,61 +247,6 @@
   color: var(--focus);
 }
 
-/* ---------------------------------------------------------------- receipt */
-
-.receipt {
-  border: 3px solid var(--accent);
-  border-radius: 12px;
-  background: #12171f;
-  padding: clamp(12px, 2vh, 18px);
-}
-
-.receipt-grid {
-  margin: 0;
-  display: grid;
-  gap: 2px;
-}
-
-.receipt-row {
-  display: grid;
-  grid-template-columns: minmax(8.5rem, 32%) 1fr;
-  gap: 10px;
-  padding: 8px 4px;
-  border-bottom: 1px solid #26303f;
-}
-
-.receipt-row:last-child {
-  border-bottom: 0;
-}
-
-.receipt-row dt {
-  font-weight: 700;
-  color: var(--ink-faint);
-}
-
-.receipt-row dd {
-  margin: 0;
-  color: var(--ink);
-}
-
-.receipt-missing {
-  color: #ff9d8a;
-}
-
-.receipt-note {
-  margin: 12px 0 0;
-  font-size: 0.88em;
-  line-height: 1.5;
-  color: var(--accent);
-}
-
-@media (max-width: 34rem) {
-  .receipt-row {
-    grid-template-columns: 1fr;
-    gap: 2px;
-  }
-}
-
 /* -------------------------------------------------------------- gate quiz */
 
 .quiz {

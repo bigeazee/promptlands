@@ -3,8 +3,8 @@
 PromptLands is a small top-down browser game that doubles as a talk about
 AI-assisted development. You walk a three-zone map and open the things you find,
 and each one describes something a product manager could realistically build
-themselves — with a receipt saying what it cost to build. It runs entirely in
-your browser: no server, no accounts, no tracking.
+themselves. Most of them nobody has built yet, and the game says so and asks you
+to. It runs entirely in your browser: no server, no accounts, no tracking.
 
 **Play it: <https://bigeazee.github.io/promptlands/>**
 
@@ -21,8 +21,8 @@ changes is the discipline you wrap around it.
 | `E`, `Enter` or `Space` | Open whatever you are standing next to |
 | `Escape` | Close a panel, or walk away from a gate question |
 
-Inside a station panel, `↑` `↓` and `PageUp` `PageDown` scroll it, and `End`
-jumps straight to the receipt at the bottom — which is the part worth reading.
+Inside a station panel, `↑` `↓` and `PageUp` `PageDown` scroll it, and `Home` and
+`End` jump to the top and the bottom.
 At a gate, `1`–`4` pick an answer outright, or use `↑` `↓` and `Enter`.
 
 You do not have to be facing something to open it — standing next to it is

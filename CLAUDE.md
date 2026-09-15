@@ -142,7 +142,7 @@ licence and updating `CREDITS.md`.
   main.js        boot module: the only place engine, content, UI and state meet
   engine/        loop, input, camera, collision, renderer
   ui/            panel, gate quiz, dialogue, field notes, HUD
-  content/       stations.js, exhibits.js, invitation.js, notes.js, gates.js, guides.js, map.js, sprites.js
+  content/       stations.js, showcases.js, notes.js, gates.js, guides.js, map.js, sprites.js
   state/         progress, localStorage
 /assets/         Kenney sprites
 /demos/          the playable tools stations link out to, one directory each, same rules as above
@@ -188,7 +188,7 @@ Three zones, unlocked in sequence. The player starts in Zone 1.
 map has, and it is what the difficulty curve means. Anything that sits in a zone for a
 different reason — because it is important, because it is impressive — quietly breaks it.
 
-That is why **exhibits are not stations** (section 7). A thing that already exists is not a
+That is why **showcases are not stations** (section 7). A thing that already exists is not a
 challenge, so "how hard would this be for you?" is the wrong question to ask of it, and it
 sits in the zone matching how hard its OWN build was. Monty is in Zone 1 for exactly that
 reason, and the gap between how simple it was and how much it was trusted is the argument of
@@ -251,77 +251,77 @@ export const stations = [
     sprite: "chest",
     problem: "...",
     build: "...",
-    steps: ["...", "..."],
+    status: "sketch",
     prompt: "Copy-paste starter prompt goes here",
-    receipt: {
-      buildTime: "One evening",
-      tool: "Claude web",
-      cost: "Free tier",
-      lines: "~400 (est.)",
-      dataTouched: "None",
-      skill: "Writing clear branches",
-      hardestPart: "Deciding what the branches should be"
-    },
-    demo: { type: "placeholder" },
     links: []
   }
 ];
 ```
 
-`demo.type` supports:
+`status` has two values and no others:
 
-- `placeholder` — a clean "coming soon" state with a documented mount point for a future module
-- `external` — links out, no embedded demo
-- `embedded` — a future mini-game module. **Not implemented in v1.**
+- `sketch` — nobody has built this. The panel says so and asks somebody to.
+- `built` — it exists, and `links` is where to go and look. The validator refuses a `built`
+  station with no links, because somewhere to go and look is the only evidence a content
+  file can carry.
 
-### The receipt is the most important element in the game
+`prompt` and `steps` are both optional. A sketch nobody has written a prompt for is a normal,
+finished station.
 
-Every station panel ends with a receipt card carrying the **same seven fields, always, in
-the same order**: build time, tool used, cost, approximate lines of code, data touched,
-skill required, hardest part. The consistency is what makes the difficulty curve legible as
-the player moves across zones. Never omit a field, never reorder them, never add an eighth.
+### There is no receipt, and this is a deliberate reversal
 
-**Receipt honesty policy:** figures for things that have actually been built are real.
-Anything not yet built is marked as an estimate — `"~400 (est.)"`, `"One evening (est.)"`.
-An audience that spots one invented number stops trusting the whole curve, and that curve is
-the entire argument of the talk. Never present a guess as a measurement.
+Every panel used to end with a card of seven fixed fields: build time, tool, cost, lines of
+code, data touched, skill required, hardest part. Anything nobody had measured was marked
+`(est.)`. Earlier versions of this file called that card the most important element in the
+game and said never to omit a field.
 
-### Every station panel has the same four sections, in this order
+**It is gone, along with the `(est.)` convention.** Seven fixed fields across nine objects
+was sixty-three slots that all had to be filled, and most were filled with guesses wearing a
+marker. It also failed at the only job that mattered: the prose describing one of the
+showcases was wrong about what the tool did, in four separate ways, and a card that polices
+numbers never looks at sentences.
+
+**The honesty rule is now simpler. If you did not measure it, leave it out.** A figure worth
+having goes in the prose as a sentence, where it can say how it was arrived at. Nothing is
+padded to fill a slot, because there are no slots.
+
+### Every station panel has the same sections, in this order
 
 1. **The problem** — the PM pain it addresses, in plain language, no jargon
 2. **What you'd build** — a short description of the thing
-3. **Get started** — three to five concrete steps, including a copy-pasteable opening prompt
-4. **The receipt** — the seven-field card above
+3. **Whether it exists** — the links, or a standing ask for somebody to build it
+4. **Get started** — a copy-pasteable opening prompt, where there is one
 
 ### Three content types, not one
 
-A **station** is a challenge: something to go and build. It has the four sections, the
-seven-field receipt, and a zone that says how complex it is. Contributors add these.
+A **station** is a challenge: something to go and build. It has a zone that says how complex
+it would be, and a `status` saying whether anybody has. Contributors add these.
 
-An **exhibit** (`src/content/exhibits.js`) is something that already exists and was used. It
+A **showcase** (`src/content/showcases.js`) is something that already exists and was used. It
 has `what` it is and `happened` — what came of it — and no steps, because nobody is being
-asked to build it. **An exhibit's receipt may not contain `(est.)` anywhere**, and the
-validator enforces it: an exhibit is the evidence the difficulty curve rests on, and evidence
-with guessed numbers is not evidence. Where a figure was never captured, write
-`"Not recorded"` — a true statement about the past, not an estimate of anything.
+asked to build it.
 
-The **invitation** (`src/content/invitation.js`) is the one object that asks something of the
-player. There is exactly one, and it has **no receipt**: a receipt answers "what did this cost
-to build?", which it cannot answer, and seven invented figures on the one object whose job is
-to be believed would cost more than the card is worth.
+**Check a showcase against its repository before you edit it.** The first version of that
+file described a forecasting tool that samples your last ten weeks of throughput out of a
+single HTML file. It does neither, and no test caught it, because prose is the part nothing
+reads. A showcase is the evidence the whole difficulty curve rests on, and evidence that is
+wrong about what the thing does is worse than no evidence at all.
+
+There is no separate invitation type. The ask lives on every unbuilt station, next to the
+specific idea it applies to, rather than in one object at the end of the map.
 
 ### Field notes, and why lessons are not on the things that taught them
 
 `src/content/notes.js` holds the guidance and the lessons learned, opened with **N** from
 anywhere. Nothing unlocks: it is a reference, and a reference you have to earn is not one.
 
-**Lessons do not live on exhibits or stations.** Most of this started life stapled to
+**Lessons do not live on showcases or stations.** Most of this started life stapled to
 whichever station happened to need it — good sentences in the wrong place, true everywhere.
-An exhibit says what a thing is and what came of it; what building it *taught* is general and
+A showcase says what a thing is and what came of it; what building it *taught* is general and
 belongs in the notebook. A note earns its place by being useful more than once; anything true
 of exactly one station belongs in that station.
 
-Stations and exhibits may carry `notes: ["id", ...]`, rendered as a "See also" line.
+Stations and showcases may carry `notes: ["id", ...]`, rendered as a "See also" line.
 **One-directional only** — content points at notes, notes never point back. Two things to keep
 in sync is one too many.
 
@@ -332,7 +332,8 @@ in sync is one too many.
 1. Add one object to the `stations` array in `src/content/stations.js`.
 2. Give it a unique `id`, a `zone`, a `tile` that is in bounds and not on a collision tile,
    and a `sprite` name that exists in `src/content/sprites.js`.
-3. Fill all four content sections and all seven receipt fields.
+3. Fill in the problem and the build, and set `status` to `sketch` unless you have built
+   the thing and can link to it.
 4. Run `node --test` — the content validation test checks every one of those rules.
 5. Re-read the content safety rule in section 1 against your copy.
 
@@ -350,9 +351,10 @@ covering the pure logic:
 - Zone unlock progression — correct answer unlocks, wrong answer does not
 - Progress save/load round-trip, plus graceful handling of corrupt or missing storage
 - Collision resolution against the map's collision layer
-- **Content validation** — every station has all required fields, every receipt has all
-  seven, every station tile is in bounds and not on a collision tile, every gate question
-  has exactly one correct answer, every referenced sprite name exists in the sprite contract
+- **Content validation** — every station has all required fields, every `built` station has
+  somewhere to point, every station tile is in bounds and not on a collision tile, every gate
+  question has exactly one correct answer, every referenced sprite name exists in the sprite
+  contract, and every "See also" resolves to a note that exists
 
 Validation errors come in two scopes, and the message must match the scope it is in.
 A fault in the grid — a ragged row, a character with no legend entry — names the **row,

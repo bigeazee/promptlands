@@ -10,9 +10,8 @@
  *
  * Two things are structural rather than decorative:
  *
- *   1. The four sections come out in CLAUDE.md's order, always: the problem,
- *      what you'd build, get started, the receipt. The receipt is last because
- *      the receipt is the argument.
+ *   1. The sections come out in CLAUDE.md's order, always, so two panels can
+ *      be compared by somebody reading one after the other.
  *   2. The panel scrolls ITSELF on Up/Down and PageUp/PageDown. input.js calls
  *      preventDefault() on the arrows so the page can never scroll under a
  *      screen share, which also means the browser will not scroll this panel
@@ -23,25 +22,13 @@
 import { findNote } from "../content/notes.js";
 import { el, trapTab } from "./overlay.js";
 
-/** The seven receipt fields, in CLAUDE.md's order. Never reorder, never trim. */
-const RECEIPT_FIELDS = [
-  ["buildTime", "Build time"],
-  ["tool", "Tool used"],
-  ["cost", "Cost"],
-  ["lines", "Lines of code"],
-  ["dataTouched", "Data touched"],
-  ["skill", "Skill required"],
-  ["hardestPart", "Hardest part"],
-];
-
 /** How far Up/Down nudge the panel body, in pixels. */
 const SCROLL_STEP = 72;
 
 /**
  * @param {HTMLElement} root an empty container element in index.html
  * @returns {{open: (station: object) => void,
- *            openExhibit: (exhibit: object) => void,
- *            openInvitation: (invitation: object) => void,
+ *            openShowcase: (showcase: object) => void,
  *            close: () => void, isOpen: () => boolean,
  *            onClose: (handler: Function) => void}}
  */
@@ -121,8 +108,6 @@ export function createPanel(root) {
 
   /**
    * @param {object} station one object from src/content/stations.js
-   * @throws {Error} on demo.type "embedded", which is not implemented. Better a
-   *   loud failure than a panel that quietly implies a demo exists.
    */
   function openPanel(station) {
     if (!station) throw new Error("panel.open: needs a station object.");
@@ -140,47 +125,25 @@ export function createPanel(root) {
   }
 
   /**
-   * An exhibit is proof, not homework: what the thing is, what came of it, and a
-   * receipt that is allowed no estimates. No four sections, because there is no
-   * "get started" - nobody is being asked to build this one.
+   * A showcase is proof, not homework: what the thing is and what came of it.
+   * There is no "get started" here, because nobody is being asked to build
+   * this one.
    *
    * No lessons section either, deliberately. What building these taught is
-   * general and lives in the Field Notes; see src/content/exhibits.js.
+   * general and lives in the Field Notes; see src/content/showcases.js.
    */
-  function openExhibitPanel(exhibit) {
-    if (!exhibit) throw new Error("panel.openExhibit: needs an exhibit object.");
+  function openShowcasePanel(showcase) {
+    if (!showcase) throw new Error("panel.openShowcase: needs a showcase object.");
 
     const content = [
-      section("What it is", paragraphs(exhibit.what)),
-      section("What happened", paragraphs(exhibit.happened)),
-      linkSection("Go and look", exhibit.links),
-      section("The receipt", [receipt(exhibit.receipt, { exhibit: true })]),
-      seeAlso(exhibit.notes),
+      section("What it is", paragraphs(showcase.what)),
+      section("What happened", paragraphs(showcase.happened)),
+      linkSection("Go and look", showcase.links),
+      seeAlso(showcase.notes),
     ].filter(Boolean);
 
-    eyebrow.textContent = `Zone ${exhibit.zone} · Built and used`;
-    title.textContent = exhibit.title || exhibit.id;
-    show(content);
-  }
-
-  /**
-   * The invitation has no receipt and the panel must not invent one. A receipt
-   * answers "what did this cost to build?", which is not a question this object
-   * can answer - and seven made-up figures on the one object whose job is to be
-   * believed would cost more than the card is worth.
-   */
-  function openInvitationPanel(invitation) {
-    if (!invitation) throw new Error("panel.openInvitation: needs the invitation object.");
-
-    const content = [
-      section("What is coming", paragraphs(invitation.horizon)),
-      section("The ask", paragraphs(invitation.ask)),
-      section("Get started", [steps(invitation.steps), promptBlock(invitation.prompt)]),
-      linkSection("Where to go", invitation.links),
-    ].filter(Boolean);
-
-    eyebrow.textContent = "The last one";
-    title.textContent = invitation.title || "Beyond the Map";
+    eyebrow.textContent = `Zone ${showcase.zone} · Built and used`;
+    title.textContent = showcase.title || showcase.id;
     show(content);
   }
 
@@ -217,12 +180,62 @@ export function createPanel(root) {
 
     nodes.push(section("The problem", paragraphs(station.problem)));
     nodes.push(section("What you'd build", paragraphs(station.build)));
-    nodes.push(demoSection(station));
-    nodes.push(section("Get started", [steps(station.steps), promptBlock(station.prompt)]));
-    nodes.push(section("The receipt", [receipt(station.receipt)]));
+    nodes.push(statusSection(station));
+    nodes.push(getStarted(station));
     nodes.push(seeAlso(station.notes));
 
     return nodes.filter(Boolean);
+  }
+
+  /**
+   * Whether the thing exists, and the one honest thing to say about it.
+   *
+   * A station is a sketch or it is built. A built one has somewhere to point,
+   * and the validator refuses one that does not, so the claim can never
+   * outlive the evidence for it. Most are sketches, and the panel says so in
+   * as many words: an unbuilt idea with an open ask on it is what this
+   * repository is here to collect.
+   */
+  function statusSection(station) {
+    if (station.status === "built") {
+      const links = Array.isArray(station.links) ? station.links : [];
+      if (links.length === 0) {
+        // The validator refuses this, so it is belt and braces. Still say
+        // something true rather than implying a demo nobody can open.
+        return section("The demo", [
+          el("p", "demo-note", "Built, but there is nowhere public to point at it yet."),
+        ]);
+      }
+      return section("The demo", [linkList(links)]);
+    }
+
+    return section("Nobody has built this one", [
+      el(
+        "p",
+        "demo-note",
+        "This is an idea, not a thing you can open. If you build it, open a pull request and " +
+          "it gets a link here with your name on the commit."
+      ),
+    ]);
+  }
+
+  /**
+   * Steps and a starter prompt, when there are any.
+   *
+   * Both are optional, so this returns null rather than an empty heading over
+   * nothing. A sketch that says "here is the idea, nobody has built it" is
+   * finished as it stands; a "Get started" heading with an empty copy box
+   * under it would read as a page that failed to load.
+   */
+  function getStarted(station) {
+    const parts = [];
+    if (Array.isArray(station.steps) && station.steps.length > 0) {
+      parts.push(steps(station.steps));
+    }
+    if (typeof station.prompt === "string" && station.prompt.trim() !== "") {
+      parts.push(promptBlock(station.prompt));
+    }
+    return parts.length === 0 ? null : section("Get started", parts);
   }
 
   function section(heading, children) {
@@ -294,52 +307,6 @@ export function createPanel(root) {
     }, 2000);
   }
 
-  function receipt(fields, { exhibit = false } = {}) {
-    const card = el("div", "receipt");
-    const grid = el("dl", "receipt-grid");
-    const values = fields && typeof fields === "object" ? fields : {};
-
-    for (const [key, label] of RECEIPT_FIELDS) {
-      const row = el("div", "receipt-row");
-      const value = values[key];
-      row.append(
-        el("dt", null, label),
-        el("dd", value === undefined || value === null || value === "" ? "receipt-missing" : null,
-          value === undefined || value === null || value === "" ? "(not stated)" : String(value))
-      );
-      grid.append(row);
-    }
-    card.append(grid);
-
-    // The estimate note is derived from the values rather than from an eighth
-    // receipt field, because there are seven fields and there will only ever be
-    // seven fields.
-    const estimated = RECEIPT_FIELDS.some(([key]) => /\(est\.\)/.test(String(values[key] ?? "")));
-    if (exhibit) {
-      // An exhibit's receipt carries no estimates at all - the validator refuses
-      // one - so the note says what the reader is actually looking at rather
-      // than explaining a marker that is not there.
-      card.append(
-        el(
-          "p",
-          "receipt-note",
-          "This one was built and used. Figures are measured, or say so where nobody wrote " +
-            "them down at the time. Nothing here is a guess."
-        )
-      );
-    } else if (estimated) {
-      card.append(
-        el(
-          "p",
-          "receipt-note",
-          "Anything marked (est.) is an estimate rather than a measurement. Those get " +
-            "replaced with the real figure the moment there is one."
-        )
-      );
-    }
-    return card;
-  }
-
   /**
    * The bridge to the Field Notes. Titles only - the notebook holds the bodies,
    * and duplicating them here is how the guidance ended up in nine places in
@@ -364,7 +331,7 @@ export function createPanel(root) {
     return section("See also", [wrap]);
   }
 
-  /** Shared by exhibits and the invitation. Returns null when there is nothing to link. */
+  /** Shared by stations and showcases. Returns null when there is nothing to link. */
   function linkSection(heading, links) {
     const list = Array.isArray(links) ? links : [];
     if (list.length === 0) return null;
@@ -385,39 +352,9 @@ export function createPanel(root) {
     return list;
   }
 
-  function demoSection(station) {
-    const demo = station.demo || { type: "placeholder" };
-
-    if (demo.type === "embedded") {
-      throw new Error(
-        `Station "${station.id}": demo.type "embedded" is not implemented yet. ` +
-          `Use "placeholder" until an embedded demo module exists.`
-      );
-    }
-
-    if (demo.type === "external") {
-      const links = Array.isArray(station.links) ? station.links : [];
-      if (links.length === 0) {
-        return section("The demo", [el("p", "demo-note", "No demo linked for this one yet.")]);
-      }
-      return section("The demo", [linkList(links)]);
-    }
-
-    // placeholder, and anything unrecognised, gets the honest coming-soon state.
-    const mount = el("div", "demo-mount");
-    mount.dataset.demoMount = station.id;
-    mount.append(el("p", "demo-note", "Playable demo coming soon."));
-    // MOUNT POINT. A future embedded demo module renders into this element:
-    // find it with panelRoot.querySelector('[data-demo-mount="<station id>"]')
-    // and replace its children. Nothing else in the panel needs to change.
-    mount.append(document.createComment(" embedded demo module mounts here "));
-    return section("The demo", [mount]);
-  }
-
   return {
     open: openPanel,
-    openExhibit: openExhibitPanel,
-    openInvitation: openInvitationPanel,
+    openShowcase: openShowcasePanel,
     close,
     isOpen() {
       return open;

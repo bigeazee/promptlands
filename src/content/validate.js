@@ -33,6 +33,9 @@ import { index, parseMap } from "../engine/tilemap.js";
 import { lockGates, markSolid } from "../engine/zones.js";
 import { isOverlay, spriteExists } from "./sprites.js";
 import { FLAGSHIP_MARKER_SPRITE } from "./stations.js";
+import { EXHIBIT_MARKER_SPRITE } from "./exhibits.js";
+import { INVITATION_ID } from "./invitation.js";
+import { NOTE_CATEGORIES, notes as SHIPPED_NOTES } from "./notes.js";
 import { guideId } from "./guides.js";
 
 /** The seven receipt fields, in CLAUDE.md's order. Never reorder, never trim. */
@@ -57,8 +60,25 @@ export const ZONE_IDS = [1, 2, 3];
  */
 const MAX_DIALOGUE_LINE = 140;
 
-const STATIONS_PER_ZONE = 3;
+/**
+ * Zones used to hold exactly three stations each. They no longer do, and the
+ * reason is worth writing down.
+ *
+ * Stations are CHALLENGES, and the zones grade how complex a challenge is to
+ * build. Things that already exist came off that curve and became exhibits, so
+ * Zone 3 legitimately holds one challenge where it used to hold three - and
+ * padding it back to three with invented homework would be worse than the
+ * asymmetry. What still has to hold is that no zone is empty of things to do.
+ */
+const MIN_STATIONS_PER_ZONE = 1;
+
+/**
+ * A flagship is the one talked through live, which only means anything when
+ * there is something for it to be distinct FROM. A zone with a single challenge
+ * has no flagship and should not fake one.
+ */
 const FLAGSHIPS_PER_ZONE = 1;
+const FLAGSHIP_NEEDED_FROM = 2;
 
 /** CLAUDE.md section 7: three to five concrete steps. */
 const MIN_STEPS = 3;
@@ -94,20 +114,45 @@ const NEIGHBOURS = [
  * @returns {string[]} every problem found, each a complete actionable sentence.
  *   An empty array means the content is valid.
  */
-export function validateContent({ stations, gates, guides, mapDef, legend } = {}) {
+export function validateContent({ stations, gates, guides, exhibits, invitation, mapDef, legend } = {}) {
   const problems = [];
 
   const stationList = asArray(stations, "stations", problems);
   const gateList = asArray(gates, "gates", problems);
   const guideList = asArray(guides, "guides", problems);
+  const exhibitList = asArray(exhibits, "exhibits", problems);
+  // The notebook is the one content file nothing else can be handed in its
+  // place: stations and exhibits point AT it by id, so the validator resolves
+  // those references against the shipped notes rather than a passed-in copy.
+  const noteList = SHIPPED_NOTES;
 
   for (const station of stationList) checkStation(station, problems);
   for (const gate of gateList) checkGate(gate, problems);
   for (const guide of guideList) checkGuide(guide, problems);
+  for (const exhibit of exhibitList) checkExhibit(exhibit, problems);
+  checkInvitation(invitation, problems);
+  for (const note of noteList) checkNote(note, problems);
+  checkUniqueIds(noteList, "note", problems);
+  for (const item of [...stationList, ...exhibitList]) checkNoteRefs(item, noteList, problems);
 
   checkUniqueIds(stationList, "station", problems);
   checkUniqueIds(gateList, "gate", problems);
+  checkUniqueIds(exhibitList, "exhibit", problems);
   checkZoneCounts(stationList, guideList, problems);
+
+  if (exhibitList.length === 0) {
+    problems.push(
+      "There are no exhibits. At least one thing on this map has to be something that was " +
+        "actually built and used — the whole difficulty curve is an argument, and an argument " +
+        "with no evidence in it is a pitch. See src/content/exhibits.js."
+    );
+  }
+  if (!spriteExists(EXHIBIT_MARKER_SPRITE)) {
+    problems.push(
+      `The exhibit marker sprite "${EXHIBIT_MARKER_SPRITE}" is not a sprite name in ` +
+        `src/content/sprites.js. Fix EXHIBIT_MARKER_SPRITE in src/content/exhibits.js.`
+    );
+  }
 
   if (!spriteExists(FLAGSHIP_MARKER_SPRITE)) {
     problems.push(
@@ -132,6 +177,8 @@ export function validateContent({ stations, gates, guides, mapDef, legend } = {}
     ...stationList.map((s) => ({ kind: "station", id: idOf(s), item: s })),
     ...gateList.map((g) => ({ kind: "gate", id: idOf(g), item: g })),
     ...guideList.map((g) => ({ kind: "guide", id: guideId(g), item: g })),
+    ...exhibitList.map((e) => ({ kind: "exhibit", id: idOf(e), item: e })),
+    ...(invitation ? [{ kind: "invitation", id: INVITATION_ID, item: invitation }] : []),
   ];
 
   const placementProblems = [];
@@ -142,7 +189,7 @@ export function validateContent({ stations, gates, guides, mapDef, legend } = {}
   // both of those throw on a tile the placement pass has already reported. No
   // point saying it twice in two different voices.
   if (placementProblems.length === 0) {
-    checkTheMapAsWalked(grid, stationList, gateList, guideList, problems);
+    checkTheMapAsWalked(grid, stationList, gateList, guideList, exhibitList, invitation, problems);
   }
 
   return problems;
@@ -186,26 +233,10 @@ function checkStation(station, problems) {
     say('needs flagship: true or flagship: false. One station per zone is the flagship.');
   }
 
-  if (!Array.isArray(station.steps)) {
-    say(`needs "steps": an array of ${MIN_STEPS} to ${MAX_STEPS} concrete steps.`);
-  } else {
-    if (station.steps.length < MIN_STEPS || station.steps.length > MAX_STEPS) {
-      say(
-        `has ${station.steps.length} steps. The house style is ${MIN_STEPS} to ${MAX_STEPS} — ` +
-          `fewer and nobody can follow it, more and nobody reads it.`
-      );
-    }
-    if (station.steps.some((step) => !isFilledString(step))) {
-      say("has an empty step. Every step is a sentence somebody can actually do.");
-    }
-  }
-
+  checkSteps(station.steps, say);
   checkReceipt(station.receipt, say);
   checkDemo(station, say);
-
-  if (!Array.isArray(station.links)) {
-    say('needs "links": an array. Use [] when there is nothing to link to.');
-  }
+  checkLinks(station.links, say);
 
   if (isFilledString(station.sprite) && !spriteExists(station.sprite)) {
     say(
@@ -221,6 +252,35 @@ function checkStation(station, problems) {
  * comparison. CLAUDE.md section 7: never omit a field, never reorder them,
  * never add an eighth.
  */
+/** Shared by stations and the invitation: both hand somebody a short to-do list. */
+function checkSteps(steps, say) {
+  if (!Array.isArray(steps)) {
+    say(`needs "steps": an array of ${MIN_STEPS} to ${MAX_STEPS} concrete steps.`);
+    return;
+  }
+  if (steps.length < MIN_STEPS || steps.length > MAX_STEPS) {
+    say(
+      `has ${steps.length} steps. The house style is ${MIN_STEPS} to ${MAX_STEPS} — ` +
+        `fewer and nobody can follow it, more and nobody reads it.`
+    );
+  }
+  if (steps.some((step) => !isFilledString(step))) {
+    say("has an empty step. Every step is a sentence somebody can actually do.");
+  }
+}
+
+function checkLinks(links, say) {
+  if (!Array.isArray(links)) {
+    say('needs "links": an array. Use [] when there is nothing to link to.');
+    return;
+  }
+  for (const link of links) {
+    if (!link || !isFilledString(link.href)) {
+      say("has a link with no href. Every link needs a full URL somebody can click.");
+    }
+  }
+}
+
 function checkReceipt(receipt, say) {
   if (!receipt || typeof receipt !== "object" || Array.isArray(receipt)) {
     say(`needs a receipt with all seven fields: ${RECEIPT_FIELDS.join(", ")}.`);
@@ -384,6 +444,146 @@ function checkDialogue(value, field, say, required) {
   });
 }
 
+function checkNote(note, problems) {
+  const say = (text) => problems.push(`The field note "${idOf(note)}" ${text}`);
+
+  if (!note || typeof note !== "object") {
+    problems.push("Every entry in notes must be an object. See src/content/notes.js.");
+    return;
+  }
+  for (const field of ["id", "title", "body", "category"]) {
+    if (!isFilledString(note[field])) {
+      say(`needs a non-empty "${field}".`);
+    }
+  }
+  if (isFilledString(note.category) && !NOTE_CATEGORIES.includes(note.category)) {
+    say(
+      `has category "${note.category}", which is not one of ${NOTE_CATEGORIES.join(", ")}. The ` +
+        `notebook renders category by category, so a note in an unlisted one is written but ` +
+        `never shown. Add the category to NOTE_CATEGORIES or move the note.`
+    );
+  }
+}
+
+/**
+ * Every "see also" has to point at something.
+ *
+ * This is the rule worth having. A typo here renders a cross-reference to a note
+ * that does not exist, which is exactly the kind of thing nobody notices until
+ * somebody is reading the panel out loud.
+ */
+function checkNoteRefs(item, noteList, problems) {
+  if (!item || item.notes === undefined) return;
+  const label = `"${idOf(item)}"`;
+
+  if (!Array.isArray(item.notes)) {
+    problems.push(
+      `${label} has a "notes" field that is not an array. It is a list of field note ids, or ` +
+        `left out entirely.`
+    );
+    return;
+  }
+  for (const id of item.notes) {
+    if (!noteList.some((note) => note && note.id === id)) {
+      problems.push(
+        `${label} cross-references a field note ${JSON.stringify(id)}, which does not exist in ` +
+          `src/content/notes.js. Check the spelling, or write the note.`
+      );
+    }
+  }
+}
+
+function checkExhibit(exhibit, problems) {
+  const say = (text) => problems.push(`The exhibit "${idOf(exhibit)}" ${text}`);
+
+  if (!exhibit || typeof exhibit !== "object") {
+    problems.push("Every entry in exhibits must be an object. See src/content/exhibits.js.");
+    return;
+  }
+  checkZone(exhibit.zone, (text) => problems.push(`An exhibit ${text}`));
+
+  for (const field of ["id", "title", "what", "happened", "sprite"]) {
+    if (!isFilledString(exhibit[field])) {
+      say(`needs a non-empty "${field}".`);
+    }
+  }
+  checkTileShape(exhibit.tile, say);
+  checkSpriteIsACharacterOrProp(exhibit.sprite, say);
+  checkReceipt(exhibit.receipt, say);
+
+  // The rule that makes an exhibit worth having.
+  if (exhibit.receipt && typeof exhibit.receipt === "object") {
+    const guessed = RECEIPT_FIELDS.filter((f) => /\(est\.\)/.test(String(exhibit.receipt[f] ?? "")));
+    if (guessed.length > 0) {
+      say(
+        `has estimates on its receipt (${guessed.join(", ")}). An exhibit is something that was ` +
+          `actually built and used — it is the evidence the whole difficulty curve rests on, and ` +
+          `evidence with guessed numbers is not evidence. Where a figure was never captured, ` +
+          `write "Not recorded": that is a true statement about the past, not an estimate. ` +
+          `Nobody estimates that they failed to write something down.`
+      );
+    }
+  }
+
+  // Lessons are centralised in src/content/notes.js, on purpose: what building a
+  // thing taught is general, and stapling it to the one object that happened to
+  // teach it is how nine stations ended up each teaching a bit of the same thing.
+  for (const field of ["lessons", "lesson", "learned", "lessonsLearned"]) {
+    if (exhibit[field] !== undefined) {
+      say(
+        `has a "${field}" field. Lessons do not live on exhibits — an exhibit says what a thing ` +
+          `is and what came of it. What building it taught goes in the Field Notes, in ` +
+          `src/content/notes.js, where it applies to everything rather than to one object.`
+      );
+    }
+  }
+}
+
+function checkInvitation(invitation, problems) {
+  const say = (text) => problems.push(`The invitation ${text}`);
+
+  if (!invitation || typeof invitation !== "object" || Array.isArray(invitation)) {
+    problems.push(
+      "There is no invitation. Exactly one object on this map asks something of the player, " +
+        "and without it the game ends by running out of map. See src/content/invitation.js."
+    );
+    return;
+  }
+  checkZone(invitation.zone, (text) => problems.push(`The invitation ${text}`));
+
+  for (const field of ["title", "horizon", "ask", "prompt", "sprite"]) {
+    if (!isFilledString(invitation[field])) {
+      say(`needs a non-empty "${field}".`);
+    }
+  }
+  checkTileShape(invitation.tile, say);
+  checkSpriteIsACharacterOrProp(invitation.sprite, say);
+  checkSteps(invitation.steps, say);
+  checkLinks(invitation.links, say);
+
+  if (invitation.receipt !== undefined) {
+    say(
+      "has a receipt. It must not: a receipt answers \"what did this cost to build?\", which " +
+        "is not a question the invitation can answer, and seven invented figures on the one " +
+        "object whose whole job is to be believed would cost more than the card is worth."
+    );
+  }
+}
+
+/** Anything drawn as an entity over terrain has to have transparency to draw over. */
+function checkSpriteIsACharacterOrProp(sprite, say) {
+  if (!isFilledString(sprite)) return;
+  if (!spriteExists(sprite)) {
+    say(`uses sprite "${sprite}", which is not a name in src/content/sprites.js.`);
+  } else if (!isOverlay(sprite)) {
+    say(
+      `uses sprite "${sprite}", which is an opaque terrain tile. Drawn over the map it paints a ` +
+        `solid square of ground where the object should be. Pick one with a transparent ` +
+        `background.`
+    );
+  }
+}
+
 function checkZone(zone, say, field = "zone") {
   if (!ZONE_IDS.includes(zone)) {
     say(`has ${field} ${JSON.stringify(zone)}. It must be one of ${ZONE_IDS.join(", ")}.`);
@@ -414,19 +614,21 @@ function checkUniqueIds(list, kind, problems) {
 function checkZoneCounts(stationList, guideList, problems) {
   for (const zone of ZONE_IDS) {
     const inZone = stationList.filter((station) => station && station.zone === zone);
-    if (inZone.length !== STATIONS_PER_ZONE) {
+    if (inZone.length < MIN_STATIONS_PER_ZONE) {
       problems.push(
-        `Zone ${zone} has ${inZone.length} stations. Every zone has exactly ` +
-          `${STATIONS_PER_ZONE}: the difficulty curve only reads if the zones are the same size.`
+        `Zone ${zone} has ${inZone.length} stations. Every zone needs at least ` +
+          `${MIN_STATIONS_PER_ZONE}: a zone with nothing to attempt is a corridor.`
       );
     }
     const flagships = inZone.filter((station) => station.flagship === true);
-    if (flagships.length !== FLAGSHIPS_PER_ZONE) {
+    const wants = inZone.length >= FLAGSHIP_NEEDED_FROM ? FLAGSHIPS_PER_ZONE : 0;
+    if (flagships.length !== wants) {
       problems.push(
-        `Zone ${zone} has ${flagships.length} flagship stations (${
+        `Zone ${zone} has ${inZone.length} stations and ${flagships.length} flagships (${
           flagships.map((s) => `"${idOf(s)}"`).join(", ") || "none"
-        }). Every zone has exactly ${FLAGSHIPS_PER_ZONE}, because one per zone gets talked ` +
-          `through live.`
+        }), but wants ${wants}. A zone with two or more stations marks exactly one, because ` +
+          `one per zone gets talked through live. A zone with a single station marks none — ` +
+          `there is nothing for it to be distinct from.`
       );
     }
     const inZoneGuides = guideList.filter((guide) => guide && guide.zone === zone);
@@ -504,12 +706,14 @@ function whatIsThere(grid, x, y) {
 
 // --------------------------------------------------------- the map, as walked
 
-function checkTheMapAsWalked(grid, stations, gates, guides, problems) {
+function checkTheMapAsWalked(grid, stations, gates, guides, exhibits, invitation, problems) {
   // One grid per unlock state, so no check leaves marks on another one.
   const build = (isZoneUnlocked) => {
     const g = copyOf(grid);
     markSolid(g, stations, "station");
     markSolid(g, guides, "guide");
+    markSolid(g, exhibits, "exhibit");
+    if (invitation) markSolid(g, [invitation], "invitation");
     lockGates(g, gates, isZoneUnlocked);
     return g;
   };

@@ -177,6 +177,7 @@
       <div class="controls-row">
         <button id="reset-button" class="button" type="button">Reset progress</button>
         <button id="export-button" class="button" type="button">Export progress</button>
+        <button id="notes-button" class="button" type="button">Field notes <kbd>N</kbd></button>
       </div>
 
       <!-- Inline confirmation rather than window.confirm(), which looks like a
@@ -202,6 +203,7 @@
 
     <p id="hint">
       Arrow keys or WASD to move · <strong>E</strong> to open what you are standing next to ·
+      <strong>N</strong> for field notes ·
       <strong>Esc</strong> to close
     </p>
 
@@ -210,6 +212,7 @@
     <div id="panel-root" hidden></div>
     <div id="quiz-root" hidden></div>
     <div id="dialogue-root" hidden></div>
+    <div id="notes-root" hidden></div>
 
     <!-- Relative path. The site is served from a subpath on GitHub Pages, so a
          leading slash would work locally and 404 in production. -->

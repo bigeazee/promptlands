@@ -117,6 +117,7 @@ export const stations = [
       hardestPart: "Deciding what the branches should be",
     },
 
+    notes: ["write-it-first", "one-file-first"],
     demo: { type: "placeholder" },
     links: [],
   },
@@ -178,6 +179,7 @@ export const stations = [
       hardestPart: "Accepting that all four readings are fair",
     },
 
+    notes: ["invent-the-examples", "say-where-it-runs"],
     demo: { type: "placeholder" },
     links: [],
   },
@@ -236,6 +238,7 @@ export const stations = [
       hardestPart: "Not adding features to it",
     },
 
+    notes: ["round-the-numbers", "resist-features"],
     demo: { type: "placeholder" },
     links: [],
   },
@@ -314,6 +317,7 @@ export const stations = [
       hardestPart: "Not turning the disagreement back into a single sorted list",
     },
 
+    notes: ["disagreement-is-output", "small-asks"],
     demo: { type: "external" },
     links: [
       {
@@ -390,6 +394,7 @@ export const stations = [
       hardestPart: "Keeping it descriptive instead of letting it grade people",
     },
 
+    notes: ["small-asks", "invent-the-examples"],
     demo: { type: "placeholder" },
     links: [],
   },
@@ -466,6 +471,7 @@ export const stations = [
       hardestPart: "Resisting the urge to annotate everything",
     },
 
+    notes: ["write-it-first", "say-where-it-runs"],
     demo: { type: "placeholder" },
     links: [],
   },
@@ -474,248 +480,82 @@ export const stations = [
   // Advanced. A repository, tests that run on every push, an image somebody
   // else can pull, and a release you could put a date against.
 
+  // ------------------------------------------------------------------ zone 3
+  //
+  // The only challenge in Zone 3, and therefore not a flagship: with nothing to
+  // be distinct FROM, a marker would be noise. The Linky exhibit carries the
+  // visual weight in this zone instead.
+
   {
-    id: "linky",
+    id: "hand-it-over",
     zone: 3,
-    flagship: true,
-    title: "Linky",
-    tile: { x: 70, y: 8 },
-    sprite: "server",
+    flagship: false,
+    title: "Hand It Over",
+    tile: { x: 80, y: 12 },
+    sprite: "crate",
 
     problem:
-      "Anything with more than a few hundred moving parts ends up held together by links between " +
-      "records: this blocks that, this duplicates that, this was split out of that. No tracker " +
-      "shows you the shape of it. You can see one item and its immediate neighbours, one screen " +
-      "at a time, and you certainly cannot fix two hundred links without opening two hundred " +
-      "screens. So nobody fixes them, and the links quietly stop meaning anything.",
+      "The tool works and you use it every week, so somebody asks for a copy. That is the " +
+      "moment it stops being yours. While it was yours the tape holding it together was fine, " +
+      "because you knew where the tape was. Now there is a second person who does not, and two " +
+      "ways for this to go badly: it breaks and you are the only one who can fix it, or — much " +
+      "worse — it breaks quietly and they keep trusting the output.",
 
     build:
-      "A small web service that draws the link graph around an item and lets you rewire it in " +
-      "place. It runs as a container: one command to pull it, one to run it, and it talks to " +
-      "your tracker's API using credentials that never leave the machine it is running on.\n\n" +
-      "The drawing is not the interesting part. What made it something another person could " +
-      "safely run is the machinery around it. It lives in a Git repository. Every push runs the " +
-      "test suite — 145 automated tests — and the image is rebuilt every week whether or not " +
-      "anything changed, because the base image picks up security fixes and an image nobody " +
-      "rebuilds is an image quietly rotting. It is published for more than one processor " +
-      "architecture, so it runs on a colleague's laptop as well as on the machine it was " +
-      "written on.\n\n" +
-      "The AI wrote most of the code. The two decisions that mattered most were in none of the " +
-      "prompts: keeping the access token on the server so it never reaches the browser, and " +
-      "refusing to fetch URLs that a user supplies, so the service cannot be talked into making " +
-      "requests on somebody else's behalf. Nothing asked for either. Nothing pointed out that " +
-      "they were missing. They came from a person who had seen both go wrong before — and that, " +
-      "not the code, is the argument this whole map has been making.",
+      "Not a new thing. The thing you already built, made able to survive your attention being " +
+      "somewhere else.\n\n" +
+      "That means three changes and they are always the same three. It lives in a repository, " +
+      "so there is one copy and a history rather than four versions in four inboxes. It has " +
+      "tests that run by themselves on every change, so a break announces itself instead of " +
+      "waiting to be noticed. And there is a written way for somebody else to run it that does " +
+      "not involve asking you.\n\n" +
+      "None of that is about the tool being bigger. It is about the tool being depended on, " +
+      "which is a different thing and the only thing that puts you in this zone.",
 
     steps: [
-      "Take something you already built at the level behind you and put it in a Git repository " +
-        "before you add another feature to it. That one move is most of the distance between " +
-        "these two zones.",
-      "Ask for tests before you ask for features, and make the AI run them. A suite you never " +
-        "run is a comment. This is also the point where you stop reading every line and start " +
-        "reading every result.",
-      "Paste the prompt below into your editor's AI agent — this is the level where you have " +
-        "one — and let it set up the repository, the tests and the pipeline in one go.",
-      "Turn on CI so the tests run on every push, and add a scheduled weekly rebuild. The " +
-        "rebuild is not optional: it is how the container picks up security fixes you will " +
-        "otherwise never hear about.",
-      "Before you publish anything, ask yourself the question nothing will ask you: what does " +
-        "this hold that must not reach the browser, and what does it fetch that a user could " +
-        "choose? Write your answers down. Those are yours to get right.",
+      "Take something you already built one zone back and put it in a Git repository before " +
+        "you add another feature to it. That single move is most of the distance between the " +
+        "two zones.",
+      "Ask for tests before you ask for features, and make the AI run them in front of you. " +
+        "This is also the point where you stop reading every line and start reading every " +
+        "result.",
+      "Paste the prompt below into your editor's AI agent — this is the level where having one " +
+        "starts to pay — and let it set up the repository, the tests and the pipeline together.",
+      "Turn on continuous integration so those tests run on every push, without anybody " +
+        "choosing to run them.",
+      "Give it to one person and watch them try to run it from your written instructions " +
+        "alone. Do not help. Everything they get stuck on is the actual handover work, and you " +
+        "will not find it any other way.",
     ],
 
     prompt:
-      "I have a working script that does something useful and I want to turn it into a service " +
-      "somebody else can run safely. Do it in this order, and stop after each step so I can " +
-      "read what you did.\n\n" +
-      "1. Put it in a Git repository with a README that says what it is and how to run it.\n" +
+      "I have a working single-file tool that does something useful, and I want to turn it " +
+      "into something a colleague can run without me. Do it in this order, and stop after each " +
+      "step so I can read what you did.\n\n" +
+      "1. Put it in a Git repository with a README that says what it is, who it is for, and " +
+      "how to run it from nothing.\n" +
       "2. Write automated tests for the behaviour that already works. Run them. Show me the " +
       "output, including anything that fails.\n" +
       "3. Add a continuous integration workflow that runs those tests on every push.\n" +
-      "4. Containerise it, with a documented way to pass in credentials. Credentials must come " +
-      "from the environment and must never appear in the image or in the browser.\n" +
-      "5. Add a scheduled weekly rebuild so the base image picks up security updates.\n\n" +
-      "Then, separately, review your own work as a security reviewer would and tell me: what " +
-      "secrets does this hold, where could they leak, and can a user of this service make it " +
-      "fetch a URL of their choosing? List what you find. Do not fix anything yet - I want to " +
-      "decide which of those matter.",
+      "4. Document exactly how a second person sets it up, assuming they have never seen it " +
+      "and cannot ask me anything.\n\n" +
+      "Then, separately, review your own work the way a reviewer who did not write it would, " +
+      "and tell me: what would break first if I stopped looking at this for six months, and " +
+      "what would break silently rather than loudly? List what you find. Do not fix anything " +
+      "yet — I want to decide which of those matter.",
 
     receipt: {
-      buildTime: "Not recorded (est.)",
-      tool: "An editor with an AI agent, a Git repository, and CI on every push",
+      buildTime: "A weekend, on top of something that already works (est.)",
+      tool: "An editor with an AI agent, and a Git repository (est.)",
       cost: "Free tier (est.)",
-      lines: "Not counted (est.)",
-      dataTouched: "An access token for a work tracker, held on the server and never sent to the browser.",
-      skill: "Knowing which decisions not to delegate",
-      hardestPart: "The two security decisions nothing prompted us for",
+      lines: "~200 of scaffolding around what you already had (est.)",
+      dataTouched: "Whatever your original tool touched, and now in one more place. Write that down.",
+      skill: "Writing instructions for somebody who cannot ask you a question",
+      hardestPart: "Accepting that the tests are the deliverable, not the feature you wanted to add",
     },
 
-    demo: { type: "external" },
-    links: [
-      {
-        label: "Pull the published container image from Docker Hub",
-        href: "https://hub.docker.com/r/edwinjclark/linky",
-      },
-    ],
-  },
-
-  {
-    id: "monty",
-    zone: 3,
-    flagship: false,
-    title: "Monty",
-    tile: { x: 80, y: 12 },
-    sprite: "anvil",
-
-    problem:
-      "Somebody asks when it will be done and you give a date, because a range sounds like " +
-      "hedging and a date sounds like an answer. The date is a single sample from a distribution " +
-      "nobody ever drew. When it slips — and one date pulled out of a wide distribution nearly " +
-      "always slips — the conversation that follows is about your credibility rather than about " +
-      "the spread, which was the honest answer in the first place.",
-
-    build:
-      "One file that runs ten thousand imaginary versions of the next few months. You give it " +
-      "how many items your team finished in each of the last ten weeks and how many are left. It " +
-      "samples from your own past weeks, over and over, and counts how many of those ten " +
-      "thousand futures have finished by each date.\n\n" +
-      "What comes out is not a date. It is a shape: a fifty percent line, an eighty-five percent " +
-      "line, and the distance between them, which is a fact about your team that nobody has to " +
-      "argue about. There is no backend, no API and no data store anywhere in it — it is a page " +
-      "that does arithmetic quickly. Its output has sat behind a release estimate that senior " +
-      "people acted on, which says more about how rare an honest range is than about the " +
-      "sophistication of the arithmetic.",
-
-    steps: [
-      "Count how many items your team finished in each of the last ten weeks. Ten numbers, off a " +
-        "board you already have. Do not tidy them up: the bad weeks are the entire point.",
-      "Count what is left, and accept that the number will grow. If you know roughly how much it " +
-        "has grown per week in the past, that is a second input worth having.",
-      "Paste the prompt below into Claude and ask for one self-contained HTML file. Type your " +
-        "ten numbers in and read the eighty-five percent line.",
-      "Present the shape rather than the date, and say out loud why you are doing it. The method " +
-        "is the thing that has to survive contact with the room — this week's answer will be " +
-        "wrong soon enough either way.",
-    ],
-
-    prompt:
-      "Build me a Monte Carlo delivery forecast as ONE self-contained HTML file - no libraries, " +
-      "no build step, no network calls of any kind.\n\n" +
-      "Inputs at the top:\n" +
-      "- Ten boxes for how many items were finished in each of the last ten weeks.\n" +
-      "- How many items are left.\n" +
-      "- Optionally, how many new items appear per week, as a range.\n\n" +
-      "When I press run, simulate ten thousand futures. For each one, sample a weekly throughput " +
-      "at random from the ten weeks I gave you (with replacement), add any new work, and count " +
-      "the weeks until the remaining work reaches zero.\n\n" +
-      "Show me:\n" +
-      "- A histogram of finish weeks.\n" +
-      "- The 50th, 85th and 95th percentile dates, clearly labelled, with the 85th largest and " +
-      "most prominent.\n" +
-      "- One plain-English sentence I can read out, of the form \"85 out of 100 simulated futures " +
-      "finished by <date>\".\n\n" +
-      "No date is ever presented on its own without its percentile. Big type, high contrast, " +
-      "meant for a shared screen. Keep all the wording in one clearly marked block at the top.",
-
-    receipt: {
-      buildTime: "Not recorded (est.)",
-      tool: "Not recorded (est.)",
-      cost: "Free tier (est.)",
-      lines: "Not counted (est.)",
-      dataTouched: "None. Ten weekly counts, typed in by hand. No backend, no API, nothing stored.",
-      skill: "Explaining a range to somebody who asked for a date",
-      hardestPart: "Trusting your own bad weeks enough to leave them in",
-    },
-
-    // Built, but with nowhere public to point at. "external" with no links
-    // renders "No demo linked for this one yet", which is true. "placeholder"
-    // would say "Playable demo coming soon", which would not be.
-    demo: { type: "external" },
+    notes: ["tests-before-features", "repo-before-features", "ask-it-to-review-itself"],
+    demo: { type: "placeholder" },
     links: [],
-  },
-
-  {
-    id: "beyond-the-map",
-    zone: 3,
-    flagship: false,
-    title: "Beyond the Map",
-    tile: { x: 88, y: 8 },
-    sprite: "chest_locked",
-
-    problem:
-      "Everything on this map is something one person can build in evenings, and that ceiling is " +
-      "already moving. The risk is not that you fall behind the tools. It is that you decide " +
-      "once, this year, what these things are for, and then never revisit the decision — so the " +
-      "answer you settled on quietly goes out of date while you are still repeating it.",
-
-    build:
-      "A short list of what is arriving next, and one thing to do about it.\n\n" +
-      "Agents that run on a schedule rather than when you ask: something that reads yesterday's " +
-      "changes each morning and leaves you three lines about what actually moved. Tools that " +
-      "connect to the systems you already use, so the thing you built stops being an island you " +
-      "paste into and out of. And tools that open their own pull requests — you describe a " +
-      "change and what comes back is not a file to copy, but a proposal against a real " +
-      "repository, tests already run, waiting for a person to say yes.\n\n" +
-      "None of that changes the argument. The AI at the top of that list is the same AI in the " +
-      "first zone of this map. What changes, again, is the discipline you wrap around it — and " +
-      "at this end of the scale the discipline is mostly review, because the thing now proposes " +
-      "changes faster than you can read them.\n\n" +
-      "So here is the last one, and it is the only station that asks something of you. This game " +
-      "is a repository. Fork it, add a station describing something you would build, and open a " +
-      "pull request. The contributing guide below has a list of ideas nobody has picked up yet — " +
-      "take one, or ignore all of them and write your own.",
-
-    steps: [
-      "Open the contributing guide linked below. It has the whole procedure, and a backlog of " +
-        "station ideas at the bottom for when you want one and cannot think of one.",
-      "Fork the repository on GitHub and open src/content/stations.js. Every station you have " +
-        "walked past today is one object in that one array.",
-      "Copy whichever station is closest to what you want to say. Change the id, the title, the " +
-        "tile and the sprite, then fill in all four sections and all seven receipt fields.",
-      "Run node --test. The content validation suite checks that your tile is in bounds and " +
-        "walkable, that your sprite name exists, that nothing else is standing on that tile, and " +
-        "that your receipt is complete. When something is wrong it tells you which line to fix.",
-      "Open a pull request. If a figure in your receipt is a guess, mark it (est.) — that " +
-        "convention is the only reason anybody believes the figures that are not.",
-    ],
-
-    prompt:
-      "I want to add a station to an open-source browser game. It is vanilla JavaScript with no " +
-      "build step, no framework and no dependencies, and a station is one plain object in " +
-      "src/content/stations.js.\n\n" +
-      "Here is the idea I want to describe:\n" +
-      "[paste yours here]\n\n" +
-      "Read CONTRIBUTING.md and src/content/stations.js in the repository first, then write me " +
-      "one station object that matches the house style exactly: the four sections, the seven " +
-      "receipt fields in the same order as the others, and an opening prompt somebody can copy " +
-      "and paste.\n\n" +
-      "Two rules I care about more than the rest:\n" +
-      "- Mark every figure you cannot verify as an estimate, like \"~400 (est.)\". Do not invent " +
-      "a number that looks measured.\n" +
-      "- Keep every example invented and generic. This is published on the open internet, so no " +
-      "employer detail, no system names, no real ticket references and no data about anybody.\n\n" +
-      "Then run node --test and fix whatever the content validation suite says is wrong.",
-
-    receipt: {
-      buildTime: "An evening, for your first station (est.)",
-      tool: "A text editor and a GitHub account",
-      cost: "Free. A fork and a pull request cost nothing.",
-      lines: "~40, for one station object (est.)",
-      dataTouched: "None. Everything in this repository is invented or already public.",
-      skill: "Describing something you would actually use",
-      hardestPart: "Picking one idea and stopping there",
-    },
-
-    demo: { type: "external" },
-    links: [
-      {
-        label: "How to add a station, and the backlog of ideas (CONTRIBUTING.md)",
-        href: "https://github.com/bigeazee/promptlands/blob/main/CONTRIBUTING.md",
-      },
-      {
-        label: "The repository this game is built from",
-        href: "https://github.com/bigeazee/promptlands",
-      },
-    ],
   },
 ];

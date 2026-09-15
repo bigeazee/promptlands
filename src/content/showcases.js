@@ -12,14 +12,16 @@
  * keeps it honest against the same axis.
  *
  * So a showcase goes where its own build complexity puts it, never where its
- * importance would. The gap between how cheap a thing was to build and how far
- * it ended up being trusted is the argument of the whole talk, and that gap
- * only reads if the placement is honest about the first half of it.
+ * importance would. Monty is in Zone 2 because it holds its state between
+ * visits and moves CSV and JSON in and out, which is the Zone 2 definition
+ * almost word for word. It is not in Zone 3: there are no tests and no CI.
  *
- * Check the claims here against the repository before you edit them. The first
+ * CHECK THE CLAIMS HERE AGAINST THE REPOSITORY BEFORE YOU EDIT THEM. The first
  * version of this file described a Monty that samples your last ten weeks of
- * throughput out of a single HTML file. It does neither, and nothing caught it
- * for months, because prose is the part no test reads.
+ * throughput out of a single HTML file. It does neither. It also put Linky's
+ * test count at 145 when the real figure was over a thousand. Nothing caught
+ * any of it, because prose is the part no test reads, and a showcase that is
+ * wrong about what the thing does is worse than no showcase at all.
  *
  * NO LESSONS HERE. A showcase says what a thing is (`what`) and what came of it
  * (`happened`). What building it TAUGHT is general, applies far beyond the thing
@@ -33,31 +35,31 @@
 export const showcases = [
   {
     id: "monty",
-    zone: 1,
-    tile: { x: 15, y: 13 },
+    zone: 2,
+    tile: { x: 36, y: 12 },
     sprite: "anvil",
     title: "Monty",
 
     what:
-      "One file that runs ten thousand imaginary versions of the next few months. You give it " +
-      "how many items your team finished in each of the last ten weeks and how many are left. " +
-      "It samples from your own past weeks, over and over, and counts how many of those ten " +
-      "thousand futures have finished by each date.\n\n" +
-      "What comes out is not a date. It is a shape: a fifty percent line, an eighty-five " +
-      "percent line, and the distance between them, which is a fact about your team that " +
-      "nobody has to argue about.",
+      "A forecasting tool. You list the work, give each item a size and a level of uncertainty, " +
+      "and say how many people are on it. It then runs a thousand simulated schedules and " +
+      "reports the date by which half of them had finished, the date for four fifths, and the " +
+      "date for nine tenths.\n\n" +
+      "Alongside those it draws the spread, so you can see whether the answers cluster tightly " +
+      "or scatter across two months. The spread is the part worth arguing about.",
 
     happened:
       "Its output sat behind a release estimate that senior people acted on.\n\n" +
-      "Look at where it is standing. There is no backend, no API and no data store anywhere " +
-      "in it. It is a page that does arithmetic quickly, and it belongs in the first zone of " +
-      "this map because that is honestly how hard it was to build. It is not here because it " +
-      "was difficult. It is here because an honest range turned out to be rarer, and worth " +
-      "more, than a confident date.",
+      "About an hour in a chat produced the first working version. One more day turned that into " +
+      "three files in a public repository, built with Claude Code. There is no backend, no " +
+      "database and no server anywhere in it, and you can still open it by double-clicking the " +
+      "file.",
 
-
-    notes: ["leave-the-bad-weeks-in", "show-the-spread"],
-    links: [],
+    notes: ["show-the-spread"],
+    links: [
+      { label: "Open Monty", href: "https://bigeazee.github.io/monty/" },
+      { label: "The repository", href: "https://github.com/bigeazee/monty" },
+    ],
   },
 
   {
@@ -68,28 +70,26 @@ export const showcases = [
     title: "Linky",
 
     what:
-      "A small web service that draws the link graph around an item and lets you rewire it in " +
-      "place. It runs as a container: one command to pull it, one to run it, and it talks to " +
-      "your tracker's API using credentials that never leave the machine it is running on.\n\n" +
-      "The drawing is not the interesting part. What made it something another person could " +
-      "safely run is the machinery around it. It lives in a Git repository. Every push runs " +
-      "the test suite — 145 automated tests — and the image is rebuilt every week whether or " +
-      "not anything changed, because the base image picks up security fixes and an image " +
-      "nobody rebuilds is an image quietly rotting. It is published for more than one " +
-      "processor architecture, so it runs on a colleague's laptop as well as on the machine " +
-      "it was written on.",
+      "A small web service that draws the links between items in a work tracker and lets you " +
+      "rewire them by dragging. It runs as a container: one command to pull it, one to run it.\n\n" +
+      "It talks to your tracker using credentials that never leave the machine it is running on, " +
+      "and it makes no other outbound connection at all. It also ships with a demo mode that " +
+      "serves sixty-six invented issues, so it can be shown to a room without a real instance or " +
+      "a single real ticket anywhere near the screen.",
 
     happened:
       "The AI wrote most of the code. The two decisions that mattered most were in none of the " +
       "prompts: keeping the access token on the server so it never reaches the browser, and " +
-      "refusing to fetch URLs that a user supplies, so the service cannot be talked into " +
-      "making requests on somebody else's behalf.\n\n" +
-      "Nothing asked for either. Nothing pointed out that they were missing. They came from a " +
-      "person who had seen both go wrong before — and that, not the code, is the argument this " +
-      "whole map has been making.",
+      "refusing to fetch an address that somebody using it supplies. Nothing asked about either, " +
+      "and nothing pointed out that they were missing. Both came from a person who had seen them " +
+      "go wrong before.\n\n" +
+      "Around that sits the machinery that lets a colleague run it safely. It lives in a " +
+      "repository, every push runs the test suite, and there are 1,975 of those tests. The image " +
+      "is rebuilt every Monday whether or not the code changed, because the base image picks up " +
+      "security fixes. It is published for two processor architectures, so it runs on somebody " +
+      "else's laptop as well as the machine it was written on.",
 
-
-    notes: ["tokens-off-the-browser", "rebuild-on-a-schedule", "read-results-not-lines"],
+    notes: ["tokens-off-the-browser", "rebuild-on-a-schedule"],
     links: [
       {
         label: "Pull the published container image from Docker Hub",
@@ -111,7 +111,7 @@ export const SHOWCASE_MARKER_SPRITE = "plaque";
 
 /**
  * Showcases are identified by `id` like stations, because unlike guides there is
- * no natural one-per-zone rule to lean on: Zone 1 and Zone 3 have one each today
+ * no natural one-per-zone rule to lean on: Zone 2 and Zone 3 have one each today
  * and nothing says a zone could not hold two.
  *
  * @param {{id: string}} showcase

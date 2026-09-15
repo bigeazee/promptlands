@@ -68,6 +68,26 @@ const MIN_STATIONS_PER_ZONE = 1;
 const FLAGSHIPS_PER_ZONE = 1;
 const FLAGSHIP_NEEDED_FROM = 2;
 
+/**
+ * Word ceilings on the copy a player reads.
+ *
+ * Generous on purpose: these are not the house style, they are the point where
+ * a panel stops being readable on a shared screen while somebody talks over it.
+ * The house style is half of each, and it lives in CLAUDE.md.
+ *
+ * This rule exists because the first version of this game reached six hundred
+ * words a station without anybody deciding to do that. Prose grows a sentence
+ * at a time and no reviewer sees the total, so the total is checked here.
+ */
+const MAX_WORDS = {
+  problem: 60,
+  build: 140,
+  prompt: 250,
+  what: 220,
+  happened: 220,
+  body: 90,
+};
+
 /** When a station carries steps at all, this is how many. */
 const MIN_STEPS = 3;
 const MAX_STEPS = 5;
@@ -231,6 +251,9 @@ function checkStation(station, problems) {
     say('needs flagship: true or flagship: false. One station per zone is the flagship.');
   }
 
+  checkLength(station.problem, "problem", say);
+  checkLength(station.build, "build", say);
+  checkLength(station.prompt, "prompt", say);
   checkSteps(station.steps, say);
   checkStatus(station, say);
   checkLinks(station.links, say);
@@ -239,6 +262,27 @@ function checkStation(station, problems) {
     say(
       `uses sprite "${station.sprite}", which is not a name in src/content/sprites.js. ` +
         `Add it to SPRITES there first, or pick one that already exists.`
+    );
+  }
+}
+
+/**
+ * How long a piece of copy is allowed to run.
+ *
+ * Skipped when the field is absent, because several of them are optional. An
+ * over-long field is reported with both numbers, so the person reading knows
+ * how much to cut rather than being told to try again.
+ */
+function checkLength(text, field, say) {
+  if (!isFilledString(text)) return;
+  const max = MAX_WORDS[field];
+  if (max === undefined) return;
+  const words = text.trim().split(/\s+/).length;
+  if (words > max) {
+    say(
+      `has a "${field}" of ${words} words, over the ${max} this game allows. It is read on a ` +
+        `shared screen while somebody talks over it, so cut it to about ${Math.round(max / 2)}. ` +
+        `Say the one thing and stop.`
     );
   }
 }
@@ -419,6 +463,7 @@ function checkNote(note, problems) {
       say(`needs a non-empty "${field}".`);
     }
   }
+  checkLength(note.body, "body", say);
   if (isFilledString(note.category) && !NOTE_CATEGORIES.includes(note.category)) {
     say(
       `has category "${note.category}", which is not one of ${NOTE_CATEGORIES.join(", ")}. The ` +
@@ -473,6 +518,8 @@ function checkShowcase(showcase, problems) {
   checkTileShape(showcase.tile, say);
   checkSpriteIsACharacterOrProp(showcase.sprite, say);
   checkLinks(showcase.links, say);
+  checkLength(showcase.what, "what", say);
+  checkLength(showcase.happened, "happened", say);
 
   // Lessons are centralised in src/content/notes.js, on purpose: what building a
   // thing taught is general, and stapling it to the one object that happened to

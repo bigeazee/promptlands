@@ -10,8 +10,13 @@ to. It runs entirely in your browser: no server, no accounts, no tracking.
 
 The three zones are the argument. Zone 1 is one conversation and one HTML file.
 Zone 2 holds state and moves data around. Zone 3 has a repository, tests and a
-release cadence. The AI answering you is much the same in all three; what
-changes is the discipline you wrap around it.
+release cadence. The AI answering you is much the same in all three. What
+changes is the discipline you wrap around it, and the game says so at the far
+end rather than the near one.
+
+Most of the stations are sketches nobody has built. That is deliberate: each one
+says so and asks you to build it. Two objects on the map are things that were
+built and used in earnest, and they carry links so you can go and look.
 
 ## Controls
 

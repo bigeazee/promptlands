@@ -98,6 +98,21 @@ with a zone 3 one and see the difficulty curve.
 game is narrated live to people watching a video stream, and nobody reads six
 hundred words standing up.
 
+The validation suite enforces a ceiling, and the ceiling is roughly double the
+house style so it only catches real overshoot:
+
+| Field | Ceiling | Aim for |
+|---|---|---|
+| `problem` | 60 words | about 30 |
+| `build` | 140 words | about 60 |
+| `prompt` | 250 words | about 110 |
+| A field note body | 90 words | about 50 |
+
+Two more things the suite checks, both about voice rather than length. **No em
+dashes**: a full stop, a comma or a rewrite reads better and they are the
+clearest tell of text nobody edited. And no one-line punchlines stacked up. One
+short sentence for emphasis is fine; five in a row is a tic.
+
 ### 4. If you did not measure it, leave it out
 
 There used to be a receipt here: seven fixed fields on every station, with
@@ -240,6 +255,11 @@ welcome" turns into "here is something to do this evening".
 - **Pre-mortem Generator** — describe what you are about to ship and get twenty
   ways it could go wrong, ranked by how boring they are. The boring ones are the
   ones that actually happen.
+- **Ambiguity Roulette** — paste in one requirement sentence and show four
+  straight-faced readings of it side by side, then let the room vote for the one
+  they thought it said. When the vote splits you have found the sentence to
+  rewrite, before anybody built anything. This was a station on the map until
+  the content was cut back; it is a good idea and nobody has built it.
 
 ---
 

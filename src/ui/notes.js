@@ -116,7 +116,7 @@ export function createNotes(root) {
         "p",
         "notes-intro",
         "Everything here applies to more than one thing on this map. It is all available from " +
-          "the start — there is nothing to unlock, and no wrong way to read it."
+          "the start. There is nothing to unlock, and no wrong way to read it."
       )
     );
 

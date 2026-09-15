@@ -9,19 +9,22 @@
  * THESE ARE NOT DECORATION. The gate at the end of a zone asks a question whose
  * answer has to be findable in that zone, so that somebody playing this alone -
  * with nobody narrating over the top of it - can answer honestly instead of
- * guessing. The stations carry most of that, but a station is about one idea.
+ * guessing. The stations carry some of that, but a station is about one idea.
  * The guide is the only place a zone gets to state its own point, and BOTH GATE
  * ANSWERS LIVE IN A GUIDE'S `lines`. If you rewrite one of these, re-read
  * src/content/gates.js and check the answer is still there.
+ *
+ * Wren carries the most weight of the three. She is where somebody who has
+ * never done any of this finds out how to start: pick a tool, say what you
+ * want, ask it to build the thing. She also carries the one rule that matters
+ * more than anything else on this map, which is what not to paste into a tool
+ * nobody has approved. Gate 1 tests it, so nobody reaches Zone 2 without having
+ * been told.
  *
  * `lines` is what a first-time visitor hears, one dialogue box per entry.
  * `repeat` is the shorter thing they say once you have already spoken to them -
  * so coming back is a reminder, not the whole speech again. THE GATE ANSWER
  * MUST BE IN `lines`, never only in `repeat`.
- *
- * A guide is not a station. There are no sections, no steps, no prompt and NO
- * RECEIPT - there is nothing to put on one, and a receipt with invented figures
- * on it is the fastest way to lose an audience.
  *
  * Guides are solid, like stations: you stand next to one, never on it. They do
  * not count towards the visited-stations total, which is stations only.
@@ -41,13 +44,16 @@ export const guides = [
     sprite: "npc_villager",
     name: "Wren",
     lines: [
-      "Oh — a new face! Welcome to the west end. Everything out here is one conversation and one page you can send somebody a link to.",
-      "Nothing to install. Nothing to look after. I described what I wanted and I had the thing by the end of an evening.",
-      "Here is the part that surprised me. The AI answering me out here is the same one they use in the far east of the map.",
-      "So what changes as you walk east is not the AI. It is the discipline you wrap around it.",
+      "Oh, a new face. Welcome to the west end. Everything out here is one page you can send somebody a link to.",
+      "Pick whichever AI you like. Claude Code, OpenAI Codex and Gemini Code Assist all do this sort of thing.",
+      "For something this small a chat app will do. Nothing to install, nothing to look after afterwards.",
+      "Describe what you want in plain words, then ask it to build the thing. That really is the whole method out here.",
+      "One rule before you start, and it is the only one I will nag you about. Check which tools your employer has approved.",
+      "Keep real company, customer or personal data out of anything that is not on that list. Make your examples up instead.",
+      "Invented examples show off the tool just as well, and cost you nothing at all if you get one wrong.",
     ],
     repeat: [
-      "Same AI all the way east. What changes is the discipline you wrap around it.",
+      "Pick a tool, say what you want in plain words, and keep real data out of anything unapproved.",
     ],
   },
 
@@ -58,15 +64,15 @@ export const guides = [
     sprite: "npc_ranger",
     name: "Bram",
     lines: [
-      "Past the gate, then. Good. The tools out here remember things.",
-      "They hold on to what you did between clicks. Take a CSV or a JSON file in, hand you one back.",
-      "That is what makes them useful to somebody who is not you.",
-      "Writing them still takes minutes, mind. That is not where the evening goes.",
-      "Your evening goes on deciding what the thing should do, and then checking that what came back actually does it.",
-      "That shift is the whole of this level. Ask anyone east of here — nearly all of their effort goes on reviewing, testing and deciding.",
+      "Through the gate, then. The tools out here remember things.",
+      "They hold on to what you did between visits. Take a file in, hand you one back.",
+      "That is what makes one useful to somebody who is not you.",
+      "Writing them is still quick, mind. That is not where your evening goes.",
+      "Your evening goes on deciding what the thing should do, then checking that what came back actually does it.",
+      "Ask anyone further east and they will tell you the same. Nearly all of their effort goes on reviewing, testing and deciding.",
     ],
     repeat: [
-      "Minutes to write. The evening goes on deciding what it should do, and checking that it does.",
+      "Quick to write. The evening goes on reviewing, testing and deciding.",
     ],
   },
 
@@ -77,14 +83,14 @@ export const guides = [
     sprite: "npc_knight",
     name: "Sable",
     lines: [
-      "Far enough east that it gets serious. Everything here lives in a repository.",
-      "Tests run on every push. There is an image anybody can pull and a release you could put a date against.",
-      "None of that is optional, once other people depend on the thing.",
-      "The AI still writes most of the code. I want to be straight with you about that.",
-      "But the judgement about what is safe to ship is still mine. Nothing ever prompts you for it.",
+      "Far enough east that other people depend on what you make. Everything here lives in a repository.",
+      "Tests run on every push. There is an image anybody can pull and a version you can put a date against.",
+      "None of that is optional once somebody else is relying on the thing.",
+      "The AI still writes most of the code. I am not going to pretend otherwise.",
+      "Deciding what is safe to ship is still yours, though. Nothing will ever prompt you for it.",
     ],
     repeat: [
-      "The AI writes the code. Deciding what is safe to ship is still yours, and nothing prompts you for it.",
+      "The AI writes the code. Deciding what is safe to ship is still yours.",
     ],
   },
 ];

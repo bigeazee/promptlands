@@ -27,14 +27,16 @@ export const gates = [
     tile: { x: 30, y: 10 },
     sprite: "door_wood",
     spriteUnlocked: "door_wood_open",
-    question: "What actually changes as you move up the levels of AI-assisted building?",
+    // The one rule on this map worth gating on. Wren says it twice on the way
+    // here, so nobody reaches Zone 2 without having been told at least once.
+    question: "What should you keep out of an AI tool your employer has not approved?",
     options: [
-      { text: "The AI model gets more powerful", correct: false },
-      { text: "The discipline you wrap around it", correct: true },
-      { text: "The programming language you use", correct: false },
-      { text: "How much you have to type", correct: false },
+      { text: "Real company, customer or personal data", correct: true },
+      { text: "Requirements you have not finished writing", correct: false },
+      { text: "Anything longer than a few hundred words", correct: false },
+      { text: "Code somebody else wrote", correct: false },
     ],
-    nudge: "Not quite — the answer is somewhere in this zone.",
+    nudge: "Not quite. The answer is somewhere in this zone.",
   },
 
   {
@@ -44,13 +46,13 @@ export const gates = [
     tile: { x: 61, y: 10 },
     sprite: "door_wood",
     spriteUnlocked: "door_wood_open",
-    question: "In a mature AI-assisted project, where does most of the human effort go?",
+    question: "Once other people depend on what you have built, where does most of your time go?",
     options: [
       { text: "Writing the code", correct: false },
       { text: "Reviewing, testing and deciding", correct: true },
       { text: "Writing longer prompts", correct: false },
       { text: "Choosing the right model", correct: false },
     ],
-    nudge: "Not quite — the answer is somewhere in this zone.",
+    nudge: "Not quite. The answer is somewhere in this zone.",
   },
 ];

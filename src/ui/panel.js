@@ -181,6 +181,10 @@ export function createPanel(root) {
     nodes.push(section("The problem", paragraphs(station.problem)));
     nodes.push(section("What you'd build", paragraphs(station.build)));
     nodes.push(statusSection(station));
+    // A sketch may still have somewhere worth sending the reader: background
+    // reading, or the repository it asks them to fork. statusSection only
+    // renders links for a built station, where they ARE the evidence.
+    if (station.status !== "built") nodes.push(linkSection("Where to go", station.links));
     nodes.push(getStarted(station));
     nodes.push(seeAlso(station.notes));
 
@@ -293,7 +297,7 @@ export function createPanel(root) {
       // Fall through to selecting it.
     }
     selectAll(pre);
-    flash(button, "Selected — press Ctrl+C");
+    flash(button, "Selected. Press Ctrl+C");
   }
 
   function flash(button, message) {
@@ -325,7 +329,7 @@ export function createPanel(root) {
     }
     const wrap = el("div", "see-also-block");
     wrap.append(
-      el("p", "see-also-lead", "In the field notes — press N to open them:"),
+      el("p", "see-also-lead", "In the field notes. Press N to open them:"),
       items
     );
     return section("See also", [wrap]);

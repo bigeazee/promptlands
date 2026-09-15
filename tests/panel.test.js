@@ -1,18 +1,20 @@
 /**
- * WHAT THE DEMO SECTION PROMISES
- * ==============================
+ * WHAT THE PANEL PROMISES
+ * =======================
  *
- * There are three states and the difference between two of them is the whole
- * point:
+ * A station is a sketch or it is built, and the difference has to survive
+ * contact with the panel:
  *
- *   placeholder            "Playable demo coming soon."
- *   external, with links   the links
- *   external, no links     "No demo linked for this one yet."
+ *   sketch          "Nobody has built this one", and an ask
+ *   built, links    the links
  *
- * The last one is for a thing that HAS been built and has nowhere public to
- * send anybody. Rendering "coming soon" there promises something nobody has
- * promised, and this game's argument is a difficulty curve made of receipts:
- * an audience that catches one thing overstated stops believing the rest of it.
+ * Most of this map is sketches, and saying so plainly is the job. A panel that
+ * implied an unbuilt idea was openable would be the one overstatement an
+ * audience catches, and catching one is enough to stop them believing the rest.
+ *
+ * The third state this used to have is gone. "Built with nowhere to point" is
+ * not a state any more: the validator refuses it, because somewhere to go and
+ * look is the only evidence a content file can carry.
  *
  * Runs against tests/fake-dom.js, which is a tree builder and not a browser.
  * See the warning at the top of that file about what it will not tell you.
@@ -32,16 +34,7 @@ const BASE = {
   build: "A thing.",
   steps: ["One.", "Two.", "Three."],
   prompt: "Build me a thing.",
-  receipt: {
-    buildTime: "An evening (est.)",
-    tool: "Claude web",
-    cost: "Free tier (est.)",
-    lines: "~100 (est.)",
-    dataTouched: "None.",
-    skill: "Saying what you want",
-    hardestPart: "Stopping",
-  },
-  demo: { type: "placeholder" },
+  status: "sketch",
   links: [],
 };
 
@@ -63,7 +56,7 @@ async function renderStation(overrides) {
   }
 }
 
-/** The same, for an exhibit or the invitation: both take a different open path. */
+/** The same, for a showcase: it takes a different open path. */
 async function renderVia(method, content) {
   const dom = installFakeDom();
   try {
@@ -77,114 +70,101 @@ async function renderVia(method, content) {
   }
 }
 
-const EXHIBIT = {
-  id: "example-exhibit",
+const SHOWCASE = {
+  id: "example-showcase",
   zone: 1,
-  title: "Example Exhibit",
+  title: "Example Showcase",
   what: "What it is.",
   happened: "What came of it.",
-  receipt: {
-    buildTime: "Not recorded",
-    tool: "Not recorded",
-    cost: "Free.",
-    lines: "Not counted",
-    dataTouched: "None.",
-    skill: "Something",
-    hardestPart: "Something else",
-  },
   links: [],
 };
 
-const INVITATION = {
-  zone: 3,
-  title: "Example Invitation",
-  horizon: "What is coming.",
-  ask: "Go and do it.",
-  steps: ["One.", "Two.", "Three."],
-  prompt: "Help me add one.",
-  links: [{ label: "The repository", href: "https://example.invalid/repo" }],
-};
+test("a sketch says nobody has built it, and asks somebody to", async () => {
+  const body = await renderStation({ status: "sketch", links: [] });
 
-test('demo.type "placeholder" says a demo is coming', async () => {
-  const body = await renderStation({ demo: { type: "placeholder" }, links: [] });
-  assert.match(body.textContent, /Playable demo coming soon\./);
-  assert.equal(byClass(body, "demo-mount").length, 1, "and leaves the documented mount point");
+  assert.match(body.textContent, /Nobody has built this one/);
+  assert.match(body.textContent, /open a pull request/);
+  assert.equal(byClass(body, "demo-links").length, 0, "and offers no link to open");
 });
 
-test('demo.type "external" with no links says there is none, not that one is coming', async () => {
-  const body = await renderStation({ demo: { type: "external" }, links: [] });
+test("a sketch never implies the thing is waiting to be opened", async () => {
+  const body = await renderStation({ status: "sketch", links: [] });
 
-  assert.match(body.textContent, /No demo linked for this one yet\./);
   assert.ok(
     !/coming soon/i.test(body.textContent),
-    "a built thing with nowhere to point at must not promise a demo"
+    "an unbuilt idea must not promise something nobody has promised"
   );
-  assert.equal(byClass(body, "demo-links").length, 0, "and there is no empty link list");
 });
 
-test('demo.type "external" with links renders them', async () => {
+test("a built station renders its links", async () => {
   const body = await renderStation({
-    demo: { type: "external" },
+    status: "built",
     links: [{ label: "The thing", href: "https://example.invalid/thing" }],
   });
 
-  const anchors = byClass(body, "demo-links")[0].children;
-  assert.equal(anchors.length, 1);
-  assert.equal(anchors[0].children[0].href, "https://example.invalid/thing");
-  assert.equal(anchors[0].textContent, "The thing");
-  assert.ok(!/No demo linked|coming soon/i.test(body.textContent));
+  const items = byClass(body, "demo-links")[0].children;
+  assert.equal(items.length, 1);
+  assert.equal(items[0].children[0].href, "https://example.invalid/thing");
+  assert.equal(items[0].textContent, "The thing");
+  assert.ok(!/Nobody has built this one/.test(body.textContent));
 });
 
-// ================================================================== exhibits
+test("a station with no prompt renders no copy box", async () => {
+  const withPrompt = await renderStation({});
+  assert.equal(byClass(withPrompt, "prompt-text").length, 1);
 
-test("an exhibit panel says what it is and what happened, and asks nothing", async () => {
-  const body = await renderVia("openExhibit", EXHIBIT);
+  const without = await renderStation({ prompt: undefined, steps: undefined });
+  assert.equal(
+    byClass(without, "prompt-text").length,
+    0,
+    "a sketch nobody wrote a prompt for shows an empty box to nobody"
+  );
+});
+
+// ================================================================= showcases
+
+test("a showcase says what it is and what happened, and asks nothing", async () => {
+  const body = await renderVia("openShowcase", SHOWCASE);
   const text = body.textContent;
 
   assert.match(text, /What it is/);
   assert.match(text, /What happened/);
-  // No four sections: nobody is being asked to build this one.
-  assert.ok(!/Get started/.test(text), "an exhibit has no steps and no starter prompt");
-  assert.ok(!/What you.d build/.test(text), "an exhibit is not a challenge");
+  assert.ok(!/Get started/.test(text), "a showcase has no steps and no starter prompt");
+  assert.ok(!/What you.d build/.test(text), "a showcase is not a challenge");
 });
 
-test("an exhibit receipt says its figures are not guesses", async () => {
-  const body = await renderVia("openExhibit", EXHIBIT);
-  const note = byClass(body, "receipt-note")[0];
-  assert.ok(note, "an exhibit receipt carries a note about what the reader is looking at");
-  assert.match(note.textContent, /Nothing here is a guess/);
-  // And not the estimate note, which would be explaining a marker that is absent.
-  assert.ok(!/marked \(est\.\)/.test(note.textContent));
+test("a showcase is never labelled as unbuilt", async () => {
+  const body = await renderVia("openShowcase", SHOWCASE);
+  assert.ok(
+    !/Nobody has built this one/.test(body.textContent),
+    "a showcase is the one thing on the map that definitely was built"
+  );
 });
 
-test("a station receipt still explains its estimate markers", async () => {
-  const body = await renderStation({});
-  const note = byClass(body, "receipt-note")[0];
-  assert.match(note.textContent, /Anything marked \(est\.\)/);
-});
+// ================================================== nothing carries a receipt
 
-// =============================================================== the invitation
-
-test("the invitation panel renders no receipt at all", async () => {
-  const body = await renderVia("openInvitation", INVITATION);
-
-  assert.equal(byClass(body, "receipt").length, 0, "the invitation must not render a receipt");
-  assert.match(body.textContent, /What is coming/);
-  assert.match(body.textContent, /The ask/);
-  assert.match(body.textContent, /Get started/);
-});
-
-test("the invitation still offers its links and its starter prompt", async () => {
-  const body = await renderVia("openInvitation", INVITATION);
-  assert.equal(byClass(body, "demo-links").length, 1, "its links are rendered");
-  assert.equal(byClass(body, "prompt-text").length, 1, "so is the prompt somebody copies");
-});
-
-test("both new panels refuse an empty argument rather than rendering a blank", async () => {
-  for (const method of ["openExhibit", "openInvitation"]) {
-    await assert.rejects(
-      () => renderVia(method, null),
-      /needs (an exhibit|the invitation) object/
-    );
+test("no panel renders a receipt any more", async () => {
+  for (const body of [
+    await renderStation({}),
+    await renderStation({ status: "built", links: [{ label: "x", href: "https://e.invalid" }] }),
+    await renderVia("openShowcase", SHOWCASE),
+  ]) {
+    assert.equal(byClass(body, "receipt").length, 0);
+    assert.equal(byClass(body, "receipt-note").length, 0);
+    assert.ok(!/\(est\.\)/.test(body.textContent), "and nothing explains a marker that is gone");
   }
+});
+
+test("a receipt left on a station by an old edit is ignored, not rendered", async () => {
+  const body = await renderStation({
+    receipt: { buildTime: "An evening (est.)", tool: "Claude web" },
+  });
+
+  assert.equal(byClass(body, "receipt").length, 0);
+  assert.ok(!/An evening/.test(body.textContent));
+});
+
+test("both open paths refuse an empty argument rather than rendering a blank", async () => {
+  await assert.rejects(() => renderVia("open", null), /needs a station object/);
+  await assert.rejects(() => renderVia("openShowcase", null), /needs a showcase object/);
 });

@@ -7,30 +7,23 @@
  * else, ever. If you find yourself editing src/engine/ to add one, the data
  * model needs extending - the station is not special.
  *
- * Every station needs, in this order:
+ * Every station needs:
  *   problem   the pain it addresses, in plain language, no jargon
  *   build     a short description of the thing
- *   steps     three to five concrete steps
- *   prompt    an opening prompt the reader can copy and paste as-is
- *   receipt   the same seven fields, always, in the same order
+ *   status    "sketch" if nobody has built it, "built" if it exists
+ *   prompt    optional: an opening prompt the reader can copy and paste as-is
+ *   steps     optional: concrete steps, three to five when present
  *
- * THE RECEIPT IS THE ARGUMENT. Its seven fields are what make the difficulty
- * curve legible as you walk left to right, so never drop one, never reorder them
- * and never add an eighth. Figures for things that have actually been built are
- * real. Anything not built yet is marked "(est.)" - the panel notices the marker
- * and says so on the card. An audience that spots one invented number stops
- * trusting the whole curve, and the curve is the entire argument of the talk.
+ * MOST OF THESE HAVE NOT BEEN BUILT, and the panel says so in as many words.
+ * A station is a "sketch" until somebody builds the thing and links to it, at
+ * which point it becomes "built" and the link is the proof. There is no third
+ * state and nothing to keep in sync - the validator refuses a "built" station
+ * with nowhere to point, so the claim cannot outlive the evidence.
  *
- * SEVEN OF THE NINE HAVE NOT BEEN BUILT. Every figure on those is an estimate
- * and is marked as one. When one of them gets built for real, replace the
- * estimate with what it actually took - including if that is embarrassing.
- *
- * Linky and Monty HAVE been built, and that makes them the dangerous ones. Use
- * the facts that are known and mark everything else "(est.)" - a number nobody
- * measured is a guess even when the thing it describes is real, and a guess
- * dressed as a measurement on the two stations that exist would undo the other
- * seven. "Not counted (est.)" is a perfectly good receipt entry. An invented
- * line count is not.
+ * UNFINISHED IS THE NORMAL STATE HERE, not an embarrassment to be dressed up.
+ * Every sketch closes with a standing invitation to go and build it, which is
+ * most of what this repository is for. A station that quietly implied it
+ * existed would cost more than an empty one ever could.
  *
  * This file is published on the open internet. Keep every example invented and
  * generic: no employer process detail, no system or team names, no real ticket
@@ -107,18 +100,9 @@ export const stations = [
       "so I can rewrite the wording without touching any code.\n\n" +
       "Ask me for the branches you still need and I will write them.",
 
-    receipt: {
-      buildTime: "One evening (est.)",
-      tool: "Claude web, nothing installed",
-      cost: "Free tier (est.)",
-      lines: "~400 (est.)",
-      dataTouched: "None. The scenario is invented.",
-      skill: "Writing clear branches",
-      hardestPart: "Deciding what the branches should be",
-    },
 
     notes: ["write-it-first", "one-file-first"],
-    demo: { type: "placeholder" },
+    status: "sketch",
     links: [],
   },
 
@@ -169,18 +153,9 @@ export const stations = [
       "file, and show me exactly where to paste new ones. Make it readable on a shared screen: " +
       "big type, high contrast, no decoration.",
 
-    receipt: {
-      buildTime: "An afternoon (est.)",
-      tool: "Claude web, nothing installed",
-      cost: "Free tier (est.)",
-      lines: "~150 (est.)",
-      dataTouched: "None. Use invented sentences, never anything confidential.",
-      skill: "Choosing sentences worth testing",
-      hardestPart: "Accepting that all four readings are fair",
-    },
 
     notes: ["invent-the-examples", "say-where-it-runs"],
-    demo: { type: "placeholder" },
+    status: "sketch",
     links: [],
   },
 
@@ -228,18 +203,9 @@ export const stations = [
       "room: huge type, dark background, high contrast, and nothing else on the page competing " +
       "with it.",
 
-    receipt: {
-      buildTime: "About an hour (est.)",
-      tool: "Claude web, nothing installed",
-      cost: "Free tier (est.)",
-      lines: "~80 (est.)",
-      dataTouched: "None. Two numbers you type in, held only in the page.",
-      skill: "Rounding a number until it is safe to show",
-      hardestPart: "Not adding features to it",
-    },
 
     notes: ["round-the-numbers", "resist-features"],
-    demo: { type: "placeholder" },
+    status: "sketch",
     links: [],
   },
 
@@ -305,20 +271,9 @@ export const stations = [
       "It gets shown on a shared screen, so use big type and high contrast, and put every piece " +
       "of visible wording in one clearly marked block at the top of the file.",
 
-    receipt: {
-      buildTime: "Two evenings (est.)",
-      tool: "Claude web, nothing installed",
-      // This one exists, so these two stopped being guesses. Everything else on
-      // this receipt is still an estimate and still says so.
-      cost: "Free. It calls no services, so there is nothing to pay for.",
-      lines: "2,884 across two files (measured)",
-      dataTouched: "Backlog titles you paste in, held only in the page. Demo it with invented ones.",
-      skill: "Writing titles somebody can judge in four seconds",
-      hardestPart: "Not turning the disagreement back into a single sorted list",
-    },
 
     notes: ["disagreement-is-output", "small-asks"],
-    demo: { type: "external" },
+    status: "built",
     links: [
       {
         label: "Open Backlog Swipe",
@@ -384,18 +339,9 @@ export const stations = [
       "Report, never grade. No score, no percentage, no traffic lights. Big type, high contrast: " +
       "this goes on a shared screen.",
 
-    receipt: {
-      buildTime: "An evening (est.)",
-      tool: "Claude web, nothing installed",
-      cost: "Free tier (est.)",
-      lines: "~350 (est.)",
-      dataTouched: "Whatever you paste, in the page only. Never paste anything confidential into a page you have not read.",
-      skill: "Knowing which vague words actually cause trouble",
-      hardestPart: "Keeping it descriptive instead of letting it grade people",
-    },
 
     notes: ["small-asks", "invent-the-examples"],
-    demo: { type: "placeholder" },
+    status: "sketch",
     links: [],
   },
 
@@ -461,18 +407,9 @@ export const stations = [
       "Add a button that exports that JSON block on its own, so the decisions can be read without " +
       "opening the prototype at all.",
 
-    receipt: {
-      buildTime: "Two evenings (est.)",
-      tool: "Claude web, nothing installed",
-      cost: "Free tier (est.)",
-      lines: "~700 (est.)",
-      dataTouched: "None. Invent the screen, or mock up something nobody depends on.",
-      skill: "Writing a rule short enough to sit next to the thing it governs",
-      hardestPart: "Resisting the urge to annotate everything",
-    },
 
     notes: ["write-it-first", "say-where-it-runs"],
-    demo: { type: "placeholder" },
+    status: "sketch",
     links: [],
   },
 
@@ -544,18 +481,9 @@ export const stations = [
       "what would break silently rather than loudly? List what you find. Do not fix anything " +
       "yet — I want to decide which of those matter.",
 
-    receipt: {
-      buildTime: "A weekend, on top of something that already works (est.)",
-      tool: "An editor with an AI agent, and a Git repository (est.)",
-      cost: "Free tier (est.)",
-      lines: "~200 of scaffolding around what you already had (est.)",
-      dataTouched: "Whatever your original tool touched, and now in one more place. Write that down.",
-      skill: "Writing instructions for somebody who cannot ask you a question",
-      hardestPart: "Accepting that the tests are the deliverable, not the feature you wanted to add",
-    },
 
     notes: ["tests-before-features", "repo-before-features", "ask-it-to-review-itself"],
-    demo: { type: "placeholder" },
+    status: "sketch",
     links: [],
   },
 ];

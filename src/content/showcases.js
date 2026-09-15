@@ -1,39 +1,36 @@
 /**
- * THE EXHIBITS
- * ============
+ * THE SHOWCASES
+ * =============
  *
- * Two things that already exist, and are on this map as proof rather than as
- * homework.
+ * Things that already exist and were used in earnest. They are on this map as
+ * proof, not as homework.
  *
- * EXHIBITS ARE NOT ON THE DIFFICULTY CURVE. Stations are challenges, and the
- * zones grade how complex a challenge is to build. An exhibit is something that
- * was already built and used, so "how hard would this be for you?" is the wrong
- * question to ask of it. It sits in whichever zone matches the complexity of its
- * OWN build, which is what keeps it honest against the same axis.
+ * SHOWCASES ARE NOT ON THE DIFFICULTY CURVE. Stations are challenges, and the
+ * zones grade how complex a challenge is to build. A showcase was already
+ * built, so "how hard would this be for you?" is the wrong question to ask of
+ * it. It sits in whichever zone matches the complexity of its OWN build, which
+ * keeps it honest against the same axis.
  *
- * That is why Monty is in Zone 1 and it is the best thing on the map. The
- * forecast senior people acted on was one HTML file with no backend and nothing
- * to maintain. It is in the beginner zone because that is genuinely how hard it
- * was to build, and the gap between how simple it was and how much it was
- * trusted is the entire argument of the talk arriving in one object.
+ * So a showcase goes where its own build complexity puts it, never where its
+ * importance would. The gap between how cheap a thing was to build and how far
+ * it ended up being trusted is the argument of the whole talk, and that gap
+ * only reads if the placement is honest about the first half of it.
  *
- * NO LESSONS HERE. An exhibit says what a thing is (`what`) and what came of it
+ * Check the claims here against the repository before you edit them. The first
+ * version of this file described a Monty that samples your last ten weeks of
+ * throughput out of a single HTML file. It does neither, and nothing caught it
+ * for months, because prose is the part no test reads.
+ *
+ * NO LESSONS HERE. A showcase says what a thing is (`what`) and what came of it
  * (`happened`). What building it TAUGHT is general, applies far beyond the thing
  * that happened to teach it, and lives in the Field Notes - see
  * src/content/notes.js. Do not add a lessons field, and do not smuggle lessons
  * into `happened`.
  *
- * THE RECEIPT RULE, AND IT IS ENFORCED: an exhibit's receipt may not contain
- * "(est.)" anywhere. An exhibit is the proof the whole talk rests on, and proof
- * with guessed numbers is not proof. Where a figure genuinely was not captured
- * at the time, say "Not recorded" - that is a true statement about the past, not
- * an estimate of anything. "Not recorded (est.)" would be nonsense: nobody
- * estimates that they failed to write something down.
- *
  * This file is published on the open internet. See CLAUDE.md section 1.
  */
 
-export const exhibits = [
+export const showcases = [
   {
     id: "monty",
     zone: 1,
@@ -58,15 +55,6 @@ export const exhibits = [
       "was difficult. It is here because an honest range turned out to be rarer, and worth " +
       "more, than a confident date.",
 
-    receipt: {
-      buildTime: "Not recorded",
-      tool: "Not recorded",
-      cost: "Free. It calls no services, so there is nothing to pay for.",
-      lines: "Not counted",
-      dataTouched: "None. Ten weekly counts, typed in by hand. No backend, no API, nothing stored.",
-      skill: "Explaining a range to somebody who asked for a date",
-      hardestPart: "Trusting your own bad weeks enough to leave them in",
-    },
 
     notes: ["leave-the-bad-weeks-in", "show-the-spread"],
     links: [],
@@ -100,16 +88,6 @@ export const exhibits = [
       "person who had seen both go wrong before — and that, not the code, is the argument this " +
       "whole map has been making.",
 
-    receipt: {
-      buildTime: "Not recorded",
-      tool: "An editor with an AI agent, a Git repository, and CI on every push",
-      cost: "Free. Public repository, public image, so there is nothing to pay for.",
-      lines: "Not counted",
-      dataTouched:
-        "An access token for a work tracker, held on the server and never sent to the browser.",
-      skill: "Knowing which decisions not to delegate",
-      hardestPart: "The two security decisions nothing prompted us for",
-    },
 
     notes: ["tokens-off-the-browser", "rebuild-on-a-schedule", "read-results-not-lines"],
     links: [
@@ -122,23 +100,23 @@ export const exhibits = [
 ];
 
 /**
- * The sprite drawn on the tile above an exhibit, so proof is distinguishable
+ * The sprite drawn on the tile above a showcase, so proof is distinguishable
  * from homework at a glance without reading anything.
  *
  * A plaque is what stands beside a thing in a museum, which is exactly the job.
  * The sprite has been unused since the zone guides stopped being signposts and
  * became people, so this reclaims it rather than adding one.
  */
-export const EXHIBIT_MARKER_SPRITE = "plaque";
+export const SHOWCASE_MARKER_SPRITE = "plaque";
 
 /**
- * Exhibits are identified by `id` like stations, because unlike guides there is
+ * Showcases are identified by `id` like stations, because unlike guides there is
  * no natural one-per-zone rule to lean on: Zone 1 and Zone 3 have one each today
  * and nothing says a zone could not hold two.
  *
- * @param {{id: string}} exhibit
+ * @param {{id: string}} showcase
  * @returns {string}
  */
-export function exhibitId(exhibit) {
-  return exhibit && exhibit.id;
+export function showcaseId(showcase) {
+  return showcase && showcase.id;
 }

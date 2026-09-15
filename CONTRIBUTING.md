@@ -68,56 +68,48 @@ Then change it. Here is the shape, with every field that matters:
   steps: ["...", "...", "..."],// three to five concrete steps
   prompt: "Copy-paste starter prompt goes here",
 
-  receipt: {                   // all seven, always, in this order
-    buildTime: "An evening (est.)",
-    tool: "Claude web, nothing installed",
-    cost: "Free tier (est.)",
-    lines: "~300 (est.)",
-    dataTouched: "None. The example is invented.",
-    skill: "...",
-    hardestPart: "...",
-  },
-
-  demo: { type: "placeholder" },
+  status: "sketch",            // "sketch" or "built" — see below
   links: [],
 }
 ```
 
-`demo.type` has three honest states, and picking the wrong one overstates what
-exists:
+`status` has two values:
 
 | Use | When |
 |---|---|
-| `{ type: "placeholder" }` | Nothing is built yet. The panel says "Playable demo coming soon." |
-| `{ type: "external" }` with `links` | It is built and somebody can go and look at it. |
-| `{ type: "external" }` with `links: []` | It is built, but there is nowhere public to point at. The panel says "No demo linked for this one yet." |
+| `"sketch"` | Nobody has built it. The panel says so and asks somebody to. |
+| `"built"` with `links` | It exists, and the links are where to go and look. |
 
-`{ type: "embedded" }` is not implemented and the validation suite rejects it.
+**`"built"` with no links is rejected.** Saying a thing exists is a claim about the
+world, and somewhere to go and look is the only evidence this file can hold. If you
+have built it but cannot point anybody at it, it is a sketch until you can.
 
-### 3. Fill in all four sections and all seven receipt fields
+`prompt` and `steps` are both optional. A sketch with neither is a normal, finished
+station.
 
-Every station panel has the same four sections in the same order — **the
-problem**, **what you'd build**, **get started**, **the receipt** — because the
-consistency is what lets somebody compare a zone 1 station with a zone 3 one and
-see the difficulty curve. Do not add a fifth section, and do not leave one thin.
+### 3. Fill in the problem and the build, and keep them short
 
-**The receipt is the most important element in the game.** Seven fields, always,
-in the same order, never an eighth. The validation suite enforces that.
+Every station panel has the same sections in the same order — **the problem**,
+**what you'd build**, whether it exists, and **get started** where there is a
+prompt — because the consistency is what lets somebody compare a zone 1 station
+with a zone 3 one and see the difficulty curve.
 
-### 4. Mark every figure you did not measure
+**Short is the house style, not a compromise.** Two or three sentences each. The
+game is narrated live to people watching a video stream, and nobody reads six
+hundred words standing up.
 
-Anything you have not actually built and timed is an estimate, and it says so:
+### 4. If you did not measure it, leave it out
 
-```js
-buildTime: "An evening (est.)",
-lines: "~300 (est.)",
-```
+There used to be a receipt here: seven fixed fields on every station, with
+anything unmeasured marked `(est.)`. It is gone. Sixty-three slots across nine
+objects were sixty-three things that had to be filled, and most got filled with a
+plausible guess wearing a marker.
 
-This convention is the reason anybody believes the figures that are *not*
-marked. If you know a fact, state it as a fact; if you do not, mark it. If a
-thing exists but you never counted the lines, **write `"Not counted (est.)"` —
-do not put a plausible number there.** An audience that spots one invented
-figure stops trusting the whole curve, and the curve is the argument.
+So there is no slot to pad. A figure worth having goes in your prose as a
+sentence, where you can say how you arrived at it: "about an hour, and I did not
+write down how long the first version took." Anything you did not measure simply
+does not appear. An audience that spots one invented figure stops trusting the
+rest, and nothing here forces you to invent one.
 
 ### 5. Re-read the content safety rule against your copy
 
@@ -186,10 +178,9 @@ kinds, and they read differently on purpose:
 **A fault in something you defined** names the thing by its id:
 
 ```
-Station "backlog-swipe" has receipt fields [buildTime, tool, cost, lines] but
-every receipt has exactly these seven, in this order: buildTime, tool, cost,
-lines, dataTouched, skill, hardestPart. Never omit one, never reorder them,
-never add an eighth.
+Station "backlog-swipe" is marked "built" but has no links. Somewhere to go and
+look is the only evidence this file can carry, so a station without one says
+"sketch" instead.
 ```
 
 **A fault in the map grid** names the row, the column and the character:
@@ -204,20 +195,18 @@ The rules it enforces:
 | It rejects | Because |
 |---|---|
 | A missing or empty station field | Every panel has all four sections |
-| A receipt that is missing a field, has an eighth, or is in a different order | The receipt is the argument, and it only works if it is identical everywhere |
-| A blank receipt value | Say "Not counted (est.)" rather than nothing |
-| Fewer than three or more than five steps | Fewer and nobody can follow it, more and nobody reads it |
+| A station with no `status`, or one that is not `sketch` or `built` | The panel has to know whether the thing exists |
+| `status: "built"` with no links | A claim about the world with no evidence behind it |
+| Steps present but fewer than three or more than five | Fewer and nobody can follow it, more and nobody reads it |
 | A duplicate `id` | Progress is saved against ids |
 | A zone that is not 1, 2 or 3 | There are three zones |
 | A zone with no stations at all | A zone with nothing to attempt is a corridor |
 | A zone of two or more stations without exactly one flagship | One per zone gets talked through live |
 | A flagship in a zone with only one station | A marker means nothing with nothing to be distinct from |
-| An estimate on an exhibit's receipt | An exhibit is evidence, and evidence does not guess |
-| A lessons field on an exhibit | Lessons are centralised in src/content/notes.js |
-| A receipt on the invitation | There is nothing to put on one |
+| A lessons field on a showcase | Lessons are centralised in src/content/notes.js |
+| A showcase missing what it is or what happened | Those are the whole of a showcase |
 | A "See also" pointing at a note that does not exist | It would render a cross-reference to nothing |
 | A zone with more or fewer than one guide | The guide is what makes that zone's gate answer findable |
-| `demo.type` that is not `placeholder` or `external` | `embedded` is not implemented yet |
 | A sprite name that is not in `sprites.js` | A typo would be a hole in the live site |
 | A tile off the map, or on a solid tile | You could never reach it |
 | Two things on the same tile | Only the first one could ever be opened |

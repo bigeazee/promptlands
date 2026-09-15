@@ -25,9 +25,8 @@ import { lockGates, markSolid } from "./engine/zones.js";
 import { TILE_SIZE } from "./content/sprites.js";
 import { gates } from "./content/gates.js";
 import { legend, mapDef } from "./content/map.js";
-import { EXHIBIT_MARKER_SPRITE, exhibits } from "./content/exhibits.js";
+import { SHOWCASE_MARKER_SPRITE, showcases } from "./content/showcases.js";
 import { guideId, guides } from "./content/guides.js";
-import { invitation } from "./content/invitation.js";
 import { FLAGSHIP_MARKER_SPRITE, stations } from "./content/stations.js";
 import { createProgress } from "./state/progress.js";
 import { createDialogue } from "./ui/dialogue.js";
@@ -122,7 +121,7 @@ for (const gate of gates) {
   entities.push(entity);
 }
 
-for (const item of [...stations, ...guides, ...exhibits, invitation]) {
+for (const item of [...stations, ...guides, ...showcases]) {
   entities.push({
     sprite: item.sprite,
     pxX: item.tile.x * TILE_SIZE,
@@ -141,14 +140,14 @@ for (const station of stations) {
   });
 }
 
-// Exhibits get their own marker, by the same mechanism and for a sharper reason:
-// proof and homework must be tellable apart before anybody reads a word, or the
-// player walks up to Monty expecting another thing to go and build.
-for (const exhibit of exhibits) {
+// Showcases get their own marker, by the same mechanism and for a sharper
+// reason: proof and homework must be tellable apart before anybody reads a
+// word, or the player walks up to Monty expecting another thing to go and build.
+for (const showcase of showcases) {
   entities.push({
-    sprite: EXHIBIT_MARKER_SPRITE,
-    pxX: exhibit.tile.x * TILE_SIZE,
-    pxY: (exhibit.tile.y - 1) * TILE_SIZE,
+    sprite: SHOWCASE_MARKER_SPRITE,
+    pxX: showcase.tile.x * TILE_SIZE,
+    pxY: (showcase.tile.y - 1) * TILE_SIZE,
   });
 }
 
@@ -163,7 +162,7 @@ const notes = createNotes(document.getElementById("notes-root"));
 /** Identity, not id: a station and a gate could legitimately share an id. */
 const gateSet = new Set(gates);
 const guideSet = new Set(guides);
-const exhibitSet = new Set(exhibits);
+const showcaseSet = new Set(showcases);
 
 /** Stations plus any still-locked gate. Rebuilt by syncGates. */
 const interactables = [];
@@ -178,8 +177,7 @@ try {
   // After startGame, because both need the parsed grid it returns.
   markSolid(game.grid, stations, "station");
   markSolid(game.grid, guides, "guide");
-  markSolid(game.grid, exhibits, "exhibit");
-  markSolid(game.grid, [invitation], "invitation");
+  markSolid(game.grid, showcases, "showcase");
   syncGates();
 
   refreshProgress();
@@ -257,16 +255,14 @@ function anyOverlayOpen() {
 function promptFor(item) {
   if (gateSet.has(item)) return "Answer the question";
   if (guideSet.has(item)) return `Talk to ${item.name}`;
-  if (exhibitSet.has(item)) return `Look at ${item.title}`;
-  if (item === invitation) return `Open ${item.title}`;
+  if (showcaseSet.has(item)) return `Look at ${item.title}`;
   return `Open ${item.title}`;
 }
 
 function openFor(item) {
   if (gateSet.has(item)) openGate(item);
   else if (guideSet.has(item)) openGuide(item);
-  else if (exhibitSet.has(item)) openExhibit(item);
-  else if (item === invitation) openInvitation();
+  else if (showcaseSet.has(item)) openShowcase(item);
   else openStation(item);
 }
 
@@ -283,11 +279,11 @@ function openGuide(guide) {
 }
 
 /**
- * An exhibit is proof rather than homework, so it does not count towards the
- * visited total: the HUD says "x / 7 stations" and must keep meaning challenges.
+ * A showcase is proof rather than homework, so it does not count towards the
+ * visited total: the HUD counts stations and must keep meaning challenges.
  */
-function openExhibit(exhibit) {
-  panel.openExhibit(exhibit);
+function openShowcase(showcase) {
+  panel.openShowcase(showcase);
   pauseForOverlay();
 }
 
@@ -296,18 +292,12 @@ function openNotes() {
   pauseForOverlay();
 }
 
-/** One object, no receipt, and nothing to count. */
-function openInvitation() {
-  panel.openInvitation(invitation);
-  pauseForOverlay();
-}
-
 function openStation(station) {
   try {
     panel.open(station);
   } catch (error) {
-    // Only reachable from demo.type "embedded", which is not implemented. Say
-    // so loudly, but never wedge the game in front of an audience.
+    // Station copy that the validator somehow let through. Say so loudly in
+    // the console, but never wedge the game in front of an audience.
     console.error(error);
     return;
   }
@@ -349,8 +339,7 @@ function syncGates() {
   interactables.length = 0;
   for (const station of stations) interactables.push(station);
   for (const guide of guides) interactables.push(guide);
-  for (const exhibit of exhibits) interactables.push(exhibit);
-  interactables.push(invitation);
+  for (const showcase of showcases) interactables.push(showcase);
 
   for (const gate of gates) {
     const unlocked = progress.isZoneUnlocked(gate.toZone);

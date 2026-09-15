@@ -1,109 +1,90 @@
-# Proposal: simplify the prose, cut the receipt, open the map up
+# Plan: simplify the prose, cut the receipt, open the map up
 
-Status: proposal, nothing built. Written to be argued with.
-
----
-
-## 1. The short version
-
-1. **The receipt goes.** Seven fields on every object, and the `(est.)` convention with it. One short line replaces it, and the honesty rule becomes "if you did not measure it, leave it out".
-2. **The prose is cut by about 72%**, from 6,451 player-facing words to roughly 1,800.
-3. **Most stations become sketches on purpose**: a title, two sentences, and a visible note that nobody has built it. Four of the seven.
-4. **Monty and Linky are relabelled showcases** and their copy is rewritten against what the code actually does. See section 2, which is the part you should read first.
-5. **Zone 1 teaches the method**: pick a tool, describe what you want, ask it to build. Claude Code, OpenAI Codex and Gemini Code Assist are named, and the chat apps are named for one-page builds.
-6. **Gate 1 becomes the data-safety question**, so nobody reaches Zone 2 without meeting the warning.
-7. **Zone 3 ends with Make Your Own Map**, a challenge to fork this repo and turn it into training material for your own subject. It absorbs Beyond the Map. Hand It Over goes.
+Settled. All nine open questions answered. Nothing built yet.
 
 ---
 
-## 2. What the Monty repository says, and why it changes a decision
+## 1. Decisions
 
-You sent me the repository, so I read it instead of the prose we wrote about it. The game is currently wrong about Monty in ways an audience member could catch by opening the page.
+| | Decision |
+|---|---|
+| Monty's zone | Moves to Zone 2 |
+| The receipt | Removed entirely. Nothing replaces it |
+| Linky | Read via the GitHub API, not cloned. Findings in section 3 |
+| The spine | Solving real problems, and enjoying it. Discipline demoted to Zone 3 |
+| Full stations | Choose Your Own Adventure, Backlog Swipe, Make Your Own Map |
+| Live demo | Most of the talk is spent on Linky |
+| Monty's build time | About an hour in a chat, then one day to make it a repository |
+| Monty's tool | Claude Code |
+| Ambiguity Roulette | Deleted |
+| Voice | Mine to write. Plain, short, no machine tics |
+
+---
+
+## 2. What the Monty repository says
+
+The game's copy describes a tool Monty is not.
 
 | The game says | The repository says |
 |---|---|
-| "One file" | Three files: `index.html`, `monty.css`, `monty.js` |
-| "ten thousand imaginary versions" | 1,000 simulations by default, adjustable from 100 to 10,000 |
+| "One file" | Three files |
+| "ten thousand imaginary versions" | 1,000 by default, adjustable from 100 to 10,000 |
 | "how many items your team finished in each of the last ten weeks" | Work items with a T-shirt size and an uncertainty level, plus a headcount |
-| "samples from your own past weeks" | Samples triangular distributions from a Cone of Uncertainty model. It takes no history at all |
+| "samples from your own past weeks" | Triangular distributions from a Cone of Uncertainty model. It takes no history |
 | "a fifty percent line, an eighty-five percent line" | P50, P80 and P90 |
-| Hardest part: "trusting your own bad weeks enough to leave them in" | There are no weeks to leave in |
-| Lines: "Not counted" | 4,334 lines across the three files |
-| Build time: "Not recorded" | All 14 commits and 4 merged pull requests are dated 2026-05-01 |
+| Hardest part: "trusting your own bad weeks" | There are no weeks |
+| Lines: "Not counted" | 4,334 across the three files |
 
-The cross-reference from Monty to the field note about leaving bad weeks in your data is wrong for the same reason. That note describes a tool Monty is not.
+The field note about leaving bad weeks in your data is cross-referenced from Monty and describes the same tool Monty is not. It goes.
 
-**This is the risk the receipt was invented to prevent, and the receipt did not catch it**, because the receipt polices numbers and these are sentences.
+**What is true and usable.** About an hour in a chat produced the first single file. One day turned it into three files in a public repository on Pages, with a roadmap and a snapshot export, across four pull requests. Built with Claude Code. It still carries the Artifacts storage adapter it was born with, falling back to `localStorage` everywhere else. No backend, no database, and you can still open it by double-clicking it.
 
-### What is true, and it is better
-
-Monty started as a single file built in a chat and uploaded. By the end of the same day it had been renamed for GitHub Pages, split into three files, given a roadmap document and a stakeholder snapshot export, across four pull requests. It still carries the storage adapter it was born with, preferring the Artifacts key-value store and falling back to `localStorage` for everything else.
-
-So Monty walked Zone 1 to Zone 2 in one day, and the repository records it. That is a better story than the one we invented, and you can show the commit list.
-
-### The decision it changes
-
-You chose Monty in Zone 1, on the basis that it was one HTML file that did arithmetic. It is 4,334 lines, holds state in `localStorage`, and imports and exports CSV and JSON. That is the definition of Zone 2 in `CLAUDE.md`, almost word for word. It has no tests and no CI, so it is not Zone 3.
-
-**I recommend moving Monty to Zone 2.** Your rule was that zones grade build complexity and nothing else, and applied honestly that rule puts it there. I am flagging it rather than doing it because it reverses a choice you made, and the reason is new information rather than second thoughts.
-
-The cost: Zone 1 then has no proof object, so Wren has to point east instead of at something nearby. The alternative is keeping it in Zone 1 with corrected prose and accepting that one object sits off the axis.
-
-A smaller point: the receipt says Monty calls no services. It loads two fonts from a CDN, and works without them.
+Monty moves to Zone 2, where holding state and moving CSV and JSON around is the zone definition almost verbatim.
 
 ---
 
-## 3. The prose problem, measured
+## 3. What the Linky repository says
 
-6,451 player-facing words across the content files. Measured patterns:
+Read through the API. Every claim in the game's copy checks out except one.
 
-| Pattern | Count |
+| The game says | The repository says |
 |---|---|
-| Sentences | 475 |
-| Dramatic fragments, under six words | 57, or 12% of all sentences |
-| Em dashes | 36 |
-| "actually" | 11 |
-| "the point" or "the argument" | 12 |
-| "quietly" | 8 |
-| "X is not Y. It is Z." | 5 |
+| "145 automated tests" | **1,975** |
+| Every push runs the test suite | True, on `main` and on pull requests |
+| Rebuilt weekly for security fixes | True, Mondays at 06:00 UTC, and `npm update` runs first |
+| More than one processor architecture | True, amd64 and arm64 |
+| Token stays on the server | True, proxied, held in memory, never in storage or cookies |
+| Refuses user-supplied URLs | True, private ranges blocked and HTTPS required |
 
-Twelve percent of the sentences are fragments like "Nobody can feel it.", "That gap is the point." and "Round them hard." One of those is emphasis. Fifty-seven is a tic, and it is the single most recognisable sign of machine-written prose.
+The test count is wrong by a factor of thirteen, in your favour.
 
-The word count is the bigger problem. The longest station is 621 words. Nobody standing in a talk reads 621 words, and nobody browsing alone reads nine of them.
+**Two things worth putting in the talk that are not in the game.** Linky ships a demo mode that starts a stand-in tracker with 66 invented issues, so the whole thing can be demonstrated live without touching a real instance or a single real ticket. Given that you are spending most of your time on Linky, that is the safest demo path available and it is already built. It also vendors its own libraries and makes no outbound connection except to the tracker you configure.
 
----
-
-## 4. What replaces the receipt
-
-Seven fields, in fixed order, on nine objects is 63 slots that all have to be filled. Most were filled with guesses wearing an `(est.)` badge. The badge was doing real work, and it was also the reason the card cost so much to maintain.
-
-**Replace it with one line under the title**, with no fixed fields:
-
-> Three files, no backend, no database. Built in a day.
-
-> About an hour's work. Nothing to install.
-
-Nothing appears unless it is known. A missing figure is simply absent, which is self-policing in a way `(est.)` never was, because writing nothing takes no effort and inventing something takes a sentence.
-
-What dies with it: `RECEIPT_FIELDS` in the panel, the estimate note, the `(est.)` convention, the validator's six receipt rules, the field note about marking estimates, and the outstanding job of finding real figures for two objects.
-
-What is lost: the fixed card made a Zone 1 and a Zone 3 object directly comparable. The zone label and the one-line summary carry that less precisely. I think that is a fair trade at a 72% word cut, and it is the part of this proposal I am least certain about.
+**One thing to decide.** Linky is a Jira tool and the repository says so. The game currently says "a work tracker". The public image on Docker Hub presumably names Jira already, so either is defensible. I will stay generic unless you say otherwise, because it costs nothing.
 
 ---
 
-## 5. Two kinds of challenge
+## 4. The receipt goes, and nothing replaces it
 
-A **full station** is one you would demo live. Problem, what you would build, a starter prompt. Roughly 150 words.
+Out: `RECEIPT_FIELDS` in the panel, the receipt card and its styles, the `(est.)` convention, the estimate note, the six validator rules that policed it, the field note about marking estimates, and the sections of `CLAUDE.md` and `CONTRIBUTING.md` that mandate it.
 
-A **sketch** is a title, one line of problem, one line of what it could be, and a standing invitation. Roughly 50 words. The panel closes with a fixed line:
+Facts worth keeping move into the prose as sentences. Monty's hour in a chat and Linky's test count are better said in a line of copy than printed in a table.
+
+`CLAUDE.md` currently calls the receipt the most important element in the game and says never to omit a field. Sections 7 and 8 get rewritten to say the opposite. Naming that plainly because every other file obeys that one.
+
+---
+
+## 5. Two kinds of station
+
+A **full station** is one you walk to on the day: a problem, what you would build, and a starter prompt. Roughly 150 words.
+
+A **sketch** is a title, one line of problem, one line of what it could be, and a fixed closing line:
 
 > Nobody has built this one. If you do, open a pull request.
 
-This is your "leave many of them unfinished" ask, and it improves the invitation as a side effect. Beyond the Map put the ask in a chest at the far east end, where only somebody who finished the walk would find it. Spread across four sketches, the ask sits next to the specific idea it applies to.
+Roughly 45 words. Three of the six are sketches, which is the "leave them unfinished" ask. It also puts the invitation next to each idea instead of locking it in a chest at the east end.
 
-Starter prompts go on the three full stations only. Every sketch points at one fill-in-the-blank template in the field notes. Nine prompts was nine things to keep working.
-
-`demo: { type }` can go at the same time. A station is a sketch or it is built, and a built one has a link. Two states derived from one field, instead of three states that could contradict the links array.
+`demo: { type }` goes. A station is a sketch or it is built, and a built one has a link.
 
 ---
 
@@ -111,114 +92,50 @@ Starter prompts go on the three full stations only. Every sketch points at one f
 
 | Zone | Guide | Objects |
 |---|---|---|
-| 1 | Wren | Choose Your Own Adventure (full, flagship), Ambiguity Roulette (sketch), Meeting Cost Meter (sketch) |
-| 2 | Bram | Monty (showcase), Backlog Swipe (full, built, flagship), Requirements Linter (sketch), Interactive PRD (sketch) |
+| 1 | Wren | Choose Your Own Adventure (full, flagship), Meeting Cost Meter (sketch) |
+| 2 | Bram | Monty (showcase), Backlog Swipe (full, flagship), Requirements Linter (sketch), Interactive PRD (sketch) |
 | 3 | Sable | Linky (showcase), Make Your Own Map (full) |
 
-Gate 1 between zones 1 and 2. Gate 2 between 2 and 3.
+Ambiguity Roulette is deleted. Hand It Over and Beyond the Map are replaced by Make Your Own Map, which takes the ask and the links.
 
-The existing flagship rule survives untouched: one flagship in a zone with two or more stations, none in a zone with one.
+**Two placement jobs.** Monty needs a Zone 2 tile. Zone 1 now has two stations seventeen tiles apart, exactly the validator limit, so Meeting Cost Meter moves west.
 
 Word budget:
 
 | | Now | Proposed |
 |---|---|---|
-| Seven challenges | 3,748 | ~700 |
-| Two showcases | 531 | ~230 |
+| Stations | 3,748 across seven | ~590 across six |
+| Showcases | 531 | ~280, Linky weighted |
 | The invitation | 596 | 0, folded in |
-| Three guides | 329 | ~280 |
+| Guides | 329 | ~270 |
 | Field notes | 1,165 across 17 | ~480 across 11 |
 | Gates | 82 | ~85 |
-| **Total** | **6,451** | **~1,800** |
+| **Total** | **6,451** | **~1,700** |
+
+A 74% cut.
 
 ---
 
-## 7. Getting started, and the warning
+## 7. The spine, and what the guides say
 
-Wren currently explains the difficulty curve. She should explain the method instead, because a player in Zone 1 has not started yet.
+The map argued that the AI is much the same at all three levels and what changes is the discipline around it. It now argues that you can build things that solve real problems, that it is enjoyable, and that here is how to start. Discipline stays as Zone 3's answer, where Sable and Gate 2 already live.
 
-> Welcome to the west end. Everything out here is one conversation and one page you can send somebody a link to.
->
-> Pick whichever AI you like. Claude Code, OpenAI Codex and Gemini Code Assist all do this. For one page, the chat apps are enough.
->
-> Describe what you want in plain words, then ask it to build the thing. That really is the method out here.
->
-> One rule before you start. Check what your employer allows, and never paste confidential, personal or customer data into a tool nobody has approved.
->
-> Invent your examples instead. Made-up data proves the tool works just as well and costs you nothing if you are wrong.
+**Wren** teaches the method and carries the data warning: pick a tool, describe what you want in plain words, ask it to build. Claude Code, OpenAI Codex and Gemini Code Assist are named, and the chat apps are named for one-page builds. Then the rule: check what your employer allows, and never paste confidential, personal or customer data into a tool nobody has approved. Invent your examples instead.
 
-The same warning opens the field notes, and a "How to start" entry there names the three tools again for anyone who walks past Wren.
-
-**Gate 1 becomes:**
-
-> What should never go into an AI tool your organisation has not approved?
->
-> - Real company, customer or personal data ✓
-> - Requirements you have not finished writing
-> - Anything longer than a few hundred words
-> - Code somebody else wrote
-
-Gate 2 keeps its current question about where the human effort goes, so the discipline argument still has a gate behind it. It also stops being the only thing Wren exists to set up, which frees her to do the job above.
+**Gate 1** tests that warning, so nobody reaches Zone 2 without meeting it. **Gate 2** keeps the question about where the human effort goes.
 
 ---
 
-## 8. Make Your Own Map
+## 8. Build order
 
-The Zone 3 challenge, and the one the talk should end on.
+**WP9, the model.** Remove receipts from the panel, validator, tests and docs. Delete the invitation type. Replace `demo.type` with a built-or-sketch state. Rename `exhibits.js` to `showcases.js`. No new prose, and the tests prove it.
 
-**The problem.** Training material gets written once, sent round as a deck, and read by the people who already knew it. Nobody walks through a slide.
-
-**What you would build.** This map, forked, with your subject in it. Onboarding for a team, a process nobody can remember, the thing you explain in the same meeting every month. You change the words in one file and the game is about your subject instead of this one.
-
-It earns Zone 3 on the complexity axis: a fork, a repository, an edit, a pull request and a deploy. Linky carries tests, CI and containers as the showcase beside it.
-
-It replaces Hand It Over, which asked people to add tests and CI to a tool they had not built yet. It also absorbs Beyond the Map's ask and links, so the invitation becomes something you do rather than something you read.
-
-The prediction essay in Beyond the Map goes. It is 216 words of forecasting that will date faster than anything else in the repository, and it is better said out loud by you, where being wrong costs nothing.
-
----
-
-## 9. One station, before and after
-
-**Now, 398 words.** Opening of the Meeting Cost Meter:
-
-> Everybody already knows the standing meeting is too big and too long. Nobody can feel it. "Fourteen people, an hour a week" is an abstraction, and abstractions do not change anyone's behaviour. A number climbing on a shared screen is not an abstraction.
-
-**Proposed, 55 words including the standing invitation.** The whole station:
-
-> **Meeting Cost Meter**
->
-> Everyone knows the standing meeting is too big. Nobody feels it.
->
-> A page where you type in a headcount and a rough hourly rate, press start, and watch a number climb. Round the rate hard, because nobody's salary belongs on a shared screen.
->
-> *Nobody has built this one. If you do, open a pull request.*
-
----
-
-## 10. What it costs
-
-Almost the whole content layer, which is why it is two work packages rather than one.
-
-**WP9, the model.** Remove receipts from the panel, the validator, the tests and the docs. Fold the invitation into a station type. Replace `demo.type` with a built-or-sketch state. No new prose. Mechanical, and the tests prove it.
-
-**WP10, the map.** Rewrite every player-facing word in one pass: challenges, showcases, guides, Gate 1, field notes, and Make Your Own Map. One pass by one session, because a single voice is the point and three sessions would give three.
+**WP10, the map.** Every player-facing word in one pass, so the voice is single: six stations, two showcases, three guides, Gate 1, the field notes, and Make Your Own Map.
 
 Files: all eight content files, `panel.js`, `notes.js`, `ui.css`, `main.js`, both test files, `CLAUDE.md`, `CONTRIBUTING.md`, `README.md`.
 
-**`CLAUDE.md` currently calls the receipt "the most important element in the game" and says never to omit a field.** Sections 7 and 8 have to be rewritten to say the opposite. Worth naming plainly, because everything else in this repository is built to obey that file.
-
 ---
 
-## 11. What I am not touching
+## 9. Not touching
 
-The engine, the map grid, the sprite contract, the progress store, the Backlog Swipe demo, integer scaling, the no-fail-state rule, the three-zone shape, and guides as people you talk to. None of that is the problem, and all of it works.
-
----
-
-## 12. What I need from you
-
-1. **Monty to Zone 2, or stay in Zone 1 with corrected prose?** Section 2. My recommendation is to move it.
-2. **Is one line enough to replace the receipt**, or should the cheapness evidence live only in what you say out loud?
-3. **Monty's build time.** The repository says one day for everything after the first upload. It does not record how long the original file took in the chat before that. If you remember, that number is worth having.
-4. **Was Monty built with Claude Code?** The branch names say so and I would rather you confirmed it than have me infer it into the game.
+The engine, the map grid, the sprite contract, the progress store, the Backlog Swipe demo, integer scaling, the no-fail-state rule, the three-zone shape, and guides as people you talk to.

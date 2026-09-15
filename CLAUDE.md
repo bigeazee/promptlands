@@ -7,8 +7,11 @@ PromptLands is a top-down, Zelda-style browser game that serves as the delivery 
 managers over Microsoft Teams. Players walk a three-zone map and interact with objects that
 open "stations" — panels describing things a PM could build themselves.
 
-The through-line: **the AI is roughly the same at all three levels. What changes is the
-discipline you wrap around it.** The three zones make that progression physical.
+The through-line: **a product manager can build things that solve real problems, and it is
+enjoyable to do.** The three zones make the range physical, from an evening's work to
+something a team depends on. What changes as you walk east is the discipline you wrap around
+the AI, and that point belongs at the far end rather than at the start: somebody in Zone 1
+needs to know how to begin, not what it costs to be serious.
 
 ---
 
@@ -180,7 +183,7 @@ Three zones, unlocked in sequence. The player starts in Zone 1.
 
 | Zone | Theme | Level |
 |---|---|---|
-| 1 | Beginner — prompt and go | Claude web, no install, an evening's work |
+| 1 | Beginner — prompt and go | Any AI coding tool or chat app, no install, an evening's work |
 | 2 | Intermediate — state and data | One file, holds state, imports and exports CSV or JSON |
 | 3 | Advanced — real engineering | Repo, tests, CI, containers, release cadence |
 
@@ -190,9 +193,11 @@ different reason — because it is important, because it is impressive — quiet
 
 That is why **showcases are not stations** (section 7). A thing that already exists is not a
 challenge, so "how hard would this be for you?" is the wrong question to ask of it, and it
-sits in the zone matching how hard its OWN build was. Monty is in Zone 1 for exactly that
-reason, and the gap between how simple it was and how much it was trusted is the argument of
-the whole talk arriving in one object.
+sits in the zone matching how hard its OWN build was. Monty is in Zone 2 for exactly that
+reason: it holds its state between visits and moves CSV and JSON around, which is the Zone 2
+definition almost word for word, and it has no tests and no CI so it is not Zone 3. It was
+briefly in Zone 1 on the strength of copy claiming it was a single HTML file, which it has
+never been.
 
 Zones need **at least one** station each. They no longer need three: once things that exist
 came off the curve, Zone 3 legitimately held one challenge, and padding it back to three with

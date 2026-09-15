@@ -61,7 +61,7 @@ export function createGateQuiz(root) {
   const help = el(
     "p",
     "quiz-help",
-    "Press 1 to 4, or use the up and down arrows and Enter. Escape to walk away — you can come back."
+    "Press 1 to 4, or use the up and down arrows and Enter. Escape to walk away, and you can come back."
   );
 
   dialog.append(eyebrow, question, options, note, help);
@@ -154,7 +154,7 @@ export function createGateQuiz(root) {
 
     if (!option.correct) {
       // Everything stays live. No counter, no disabled option, no red.
-      note.textContent = gate.nudge || "Not quite — the answer is somewhere in this zone.";
+      note.textContent = gate.nudge || "Not quite. The answer is somewhere in this zone.";
       note.className = "quiz-note is-nudge";
       return;
     }

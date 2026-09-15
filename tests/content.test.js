@@ -152,12 +152,14 @@ test("flagships are required where there is something to be distinct from", () =
   // And one in a SINGLE-station zone is also wrong: a marker only means
   // anything when something nearby is unmarked.
   const lonely = brokenContent((bundle) => {
-    station(bundle, "hand-it-over").flagship = true;
+    station(bundle, "make-your-own-map").flagship = true;
   });
   fires(lonely, /Zone 3 has 1 stations and 1 flagships .* but wants 0/);
 });
 
 test("a station with too few or too many steps fires", () => {
+  // No shipped station carries steps any more, so these add them. The rule
+  // still has to hold for a contributor who wants a numbered list.
   const few = brokenContent((bundle) => {
     station(bundle, "requirements-linter").steps = ["only one"];
   });
@@ -181,7 +183,7 @@ test("steps are optional: a station without any is legal", () => {
 
 test("an empty step fires", () => {
   const problems = brokenContent((bundle) => {
-    station(bundle, "requirements-linter").steps[1] = "   ";
+    station(bundle, "requirements-linter").steps = ["One.", "   ", "Three."];
   });
   fires(problems, /Station "requirements-linter" has an empty step/);
 });
@@ -306,7 +308,9 @@ test("a gate with no correct option fires, saying nobody could pass it", () => {
 
 test("a gate with two correct options fires", () => {
   const problems = brokenContent((bundle) => {
-    bundle.gates[0].options[0].correct = true;
+    // Whichever option is already right, mark a second one right too.
+    const options = bundle.gates[0].options;
+    options.find((option) => option.correct !== true).correct = true;
   });
   fires(problems, /Gate "gate-1-2" has 2 correct options.*any of them would open the door/s);
 });
@@ -507,11 +511,11 @@ test("an unreachable station fires, even with every gate open", () => {
 test("stations too far apart fires, and reports the distance it measured", () => {
   const problems = brokenContent((bundle) => {
     // Up into the trees at the top of zone 1, well off the lane.
-    station(bundle, "ambiguity-roulette").tile = { x: 15, y: 2 };
+    station(bundle, "meeting-cost-meter").tile = { x: 15, y: 2 };
   });
   const message = fires(problems, /follow one another in zone 1 but are \d+ tiles apart on foot/);
   assert.match(message, /"cyoa"/);
-  assert.match(message, /"ambiguity-roulette"/);
+  assert.match(message, /"meeting-cost-meter"/);
   assert.match(message, new RegExp(`over the limit of ${MAX_WALK_TILES}`));
   assert.match(message, /seconds of walking/);
 });
@@ -521,7 +525,7 @@ test("walking distance is measured on foot, not as the crow flies", () => {
   // the limit. On foot, round the trees and back down to the lane, it is not.
   // Straight-line distance would wave this through.
   const problems = brokenContent((bundle) => {
-    station(bundle, "ambiguity-roulette").tile = { x: 15, y: 2 };
+    station(bundle, "meeting-cost-meter").tile = { x: 15, y: 2 };
   });
   const message = fires(problems, /are \d+ tiles apart on foot/);
   const measured = Number(message.match(/are (\d+) tiles apart on foot/)[1]);
@@ -611,6 +615,45 @@ test("a showcase standing on a station fires, like any other collision", () => {
     bundle.showcases[0].tile = { ...station(bundle, "cyoa").tile };
   });
   fires(problems, /both on tile/);
+});
+
+// ============================================================== the house voice
+//
+// Two guards on the prose itself. Both exist because the first version of this
+// game drifted into six hundred words a station and a machine-written register
+// without anybody deciding to do either, and neither shows up in a diff.
+
+test("no station, showcase, guide, note or gate runs over its word ceiling", () => {
+  // The validator enforces this; this asserts the shipped copy is inside it
+  // rather than merely legal, and reports the whole picture when it is not.
+  const problems = brokenContent();
+  assert.deepEqual(problems.filter((p) => /over the \d+ this game allows/.test(p)), []);
+});
+
+test("the copy a player reads contains no em or en dashes", () => {
+  const offenders = [];
+  const check = (label, value) => {
+    if (typeof value === "string") {
+      if (/[\u2014\u2013]/.test(value)) offenders.push(label);
+    } else if (Array.isArray(value)) {
+      value.forEach((item, i) => check(`${label}[${i}]`, item));
+    } else if (value && typeof value === "object") {
+      for (const [key, item] of Object.entries(value)) check(`${label}.${key}`, item);
+    }
+  };
+
+  for (const s of stations) check(`station "${s.id}"`, { problem: s.problem, build: s.build, prompt: s.prompt, steps: s.steps });
+  for (const s of showcases) check(`showcase "${s.id}"`, { what: s.what, happened: s.happened });
+  for (const g of guides) check(`guide zone ${g.zone}`, { lines: g.lines, repeat: g.repeat });
+  for (const n of notes) check(`note "${n.id}"`, { title: n.title, body: n.body });
+  for (const g of gates) check(`gate "${g.id}"`, { question: g.question, nudge: g.nudge, options: g.options.map((o) => o.text) });
+
+  assert.deepEqual(
+    offenders,
+    [],
+    "the house style uses a full stop, a comma or a rewrite instead of a dash:\n  " +
+      offenders.join("\n  ")
+  );
 });
 
 // =============================================================== field notes

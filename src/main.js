@@ -434,7 +434,7 @@ function wireControls() {
       selection.removeAllRanges();
       selection.addRange(range);
     }
-    flashButton(exportCopy, "Selected — press Ctrl+C");
+    flashButton(exportCopy, "Selected. Press Ctrl+C");
   });
 }
 
